@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
+    <title>Welcome to mrg32k3a’s documentation! &#8212; mrg32k3a 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="welcome-to-mrg32k3a-s-documentation">
+<h1>Welcome to mrg32k3a’s documentation!<a class="headerlink" href="#welcome-to-mrg32k3a-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p>This package provides a Python implementation of the mrg32k3a pseudo-random number generator of L’Ecuyer (1999) and L’Ecuyer et al. (2002). It extends the implementation used in [PyMOSO](<a class="reference external" href="https://github.com/pymoso/PyMOSO#the-pymosoprngmrg32k3a-module">https://github.com/pymoso/PyMOSO#the-pymosoprngmrg32k3a-module</a>) to handle streams, substreams, <em>and</em> subsubstreams. The period of ~2&lt;sup&gt;191&lt;/sup&gt; is split into ~2&lt;sup&gt;50&lt;/sup&gt; streams of length 2&lt;sup&gt;141&lt;/sup&gt;, each containing 2&lt;sup&gt;47&lt;/sup&gt; substreams of length 2&lt;sup&gt;94&lt;/sup&gt;, each containing 2&lt;sup&gt;47&lt;/sup&gt; subsubstreams of length 2&lt;sup&gt;47&lt;/sup&gt;.</p>
+<p>## Details
+The <cite>rng.mrg32k3a</cite> module includes the <cite>MRG32k3a</cite> class and several useful functions for controlling the generators.
+* The <cite>MRG32k3a</cite> class is a subclass of Python’s <cite>random.Random</cite> class and therefore inherits easy-to-use methods for generating random variates. E.g., if <cite>rng</cite> is an instance of the <cite>MRG32k3a</cite> class, the command <cite>rng.normalvariate(mu=2, sigma=5)</cite> generates a normal random variate with mean 2 and standard deviation 5, <em>and</em> the command <cite>rng.lognormalvariate(lq=2, uq=5)</cite> generates a lognormal random variate with 2.5% quantile of 2 and 97.5% quantile of 5.
+* The <cite>advance_stream</cite>, <cite>advance_substream</cite>, and <cite>advance_subsubstream</cite> functions advance the generator to the start of the next stream, substream, or subsubstream, respectively.
+They make use of techniques for efficiently “jumping ahead,” as outlined by L’Ecuyer (1990).
+* The <cite>reset_stream</cite>, <cite>reset_substream</cite>, and <cite>reset_subsubstream</cite> functions reset the generator to the start of the current stream, substream, or subsubstream, respectively.</p>
+<p>The <cite>rng.matmodops</cite> module includes basic matrix/modulus operations used by the <cite>rng.mrg32k3a</cite> module.</p>
+<p>### References
+* L’Ecuyer, Pierre (1990). [Random numbers for simulation.](<a class="reference external" href="https://dl.acm.org/doi/10.1145/84537.84555">https://dl.acm.org/doi/10.1145/84537.84555</a>) <em>Communications of the ACM</em> 33(10):85-97.
+* L’Ecuyer, Pierre (1999). [Good parameters and implementations for combined multiple recursive random number generators.](<a class="reference external" href="https://pubsonline.informs.org/doi/pdf/10.1287/opre.47.1.159">https://pubsonline.informs.org/doi/pdf/10.1287/opre.47.1.159</a>) <em>Operations Research</em> 47(1):159-164.
+* L’Ecuyer, Pierre, Richard Simard, E Jack Chen, and W. David Kelton (2002). [An object-oriented random number package with many long streams and substreams.](<a class="reference external" href="https://pubsonline.informs.org/doi/10.1287/opre.50.6.1073.358">https://pubsonline.informs.org/doi/10.1287/opre.50.6.1073.358</a>) <em>Operations Research</em> 50(6):1073-1075.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">mrg32k3a</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, David Eckman, Shane Henderson, and Sara Shashaani.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
