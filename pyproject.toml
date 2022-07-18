@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mrg32k3a"
+version = "0.0.1"
+authors = [
+  { name="David Eckman", email="eckman@tamu.edu" },
+  { name="Shane Henderson", email="sgh9@cornell.edu" },
+  { name="Sara Shashaani", email="sshasha2@ncsu.edu" },
+]
+description = "A Python implementation of the mrg32k3a pseudo-random number generator."
+readme = "README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/simopt-admin/mrg32k3a"
