@@ -19,6 +19,12 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = [
+  "numpy",
+  "math",
+  "random"
+]
 
 [project.urls]
 "Homepage" = "https://github.com/simopt-admin/mrg32k3a"
+"Documentation" = "https://mrg32k3a.readthedocs.io/en/latest/"
