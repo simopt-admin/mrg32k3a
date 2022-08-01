@@ -443,7 +443,7 @@ class MRG32k3a(random.Random):
             vec = [tv - 1 for tv in temp_vec]
         return vec
 
-    def continuous_random_vector_from_simplex(self, n_elements, summation=1, exact_sum=True):
+    def continuous_random_vector_from_simplex(self, n_elements, summation=1.0, exact_sum=True):
         """Generate a random vector with a specified number of non-negative
         real-valued elements that sum up to (or less than or equal to) a
         specified number.
@@ -452,8 +452,8 @@ class MRG32k3a(random.Random):
         ----------
         n_elements : float
             Number of elements in the requested vector.
-        summation : int, optional
-            Number to which the integer elements of the vector must sum.
+        summation : float, optional
+            Number to which the elements of the vector must sum.
         exact_sum : bool, optional
             True if the sum should be equal to summation;
             False if the sum should be less than or equal to summation.
