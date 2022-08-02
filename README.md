@@ -2,14 +2,17 @@
 
 This package provides a Python implementation of the mrg32k3a pseudo-random number generator of L'Ecuyer (1999) and L'Ecuyer et al. (2002). It extends the implementation used in [PyMOSO](https://github.com/pymoso/PyMOSO#the-pymosoprngmrg32k3a-module) to handle streams, substreams, *and* subsubstreams. The period of ~2<sup>191</sup> is split into ~2<sup>50</sup> streams of length 2<sup>141</sup>, each containing 2<sup>47</sup> substreams of length 2<sup>94</sup>, each containing 2<sup>47</sup> subsubstreams of length 2<sup>47</sup>.
 
-## Details
-The `rng.mrg32k3a` module includes the `MRG32k3a` class and several useful functions for controlling the generators.
-* The `MRG32k3a` class is a subclass of Python's `random.Random` class and therefore inherits easy-to-use methods for generating random variates. E.g., if `rng` is an instance of the `MRG32k3a` class, the command `rng.normalvariate(mu=2, sigma=5)` generates a normal random variate with mean 2 and standard deviation 5, *and* the command `rng.lognormalvariate(lq=2, uq=5)` generates a lognormal random variate with 2.5\% quantile of 2 and 97.5\% quantile of 5.
+### Details
+The `mrg32k3a` module includes the `MRG32k3a` class and several useful functions for controlling the generators.
+* The `MRG32k3a` class is a subclass of Python's `random.Random` class and therefore inherits easy-to-use methods for generating random variates. E.g., if `rng` is an instance of the `MRG32k3a` class, the command `rng.normalvariate(mu=2, sigma=5)` generates a normal random variate with mean 2 and standard deviation 5.
 * The `advance_stream`, `advance_substream`, and `advance_subsubstream` functions advance the generator to the start of the next stream, substream, or subsubstream, respectively.
 They make use of techniques for efficiently "jumping ahead," as outlined by L'Ecuyer (1990).
 * The `reset_stream`, `reset_substream`, and `reset_subsubstream` functions reset the generator to the start of the current stream, substream, or subsubstream, respectively.
 
-The `rng.matmodops` module includes basic matrix/modulus operations used by the `rng.mrg32k3a` module.
+The `matmodops` module includes basic matrix/modulus operations used by the `mrg32k3a` module.
+
+### Documentation
+Full documentation for the `mrg32k3a` source code can be found [here](https://mrg32k3a.readthedocs.io/en/latest/).
 
 ### References
 * L'Ecuyer, Pierre (1990). [Random numbers for simulation.](https://dl.acm.org/doi/10.1145/84537.84555) *Communications of the ACM* 33(10):85-97.

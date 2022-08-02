@@ -1,3 +1,10 @@
+# If you have added/deleted files/modules, you will need to run the following sphinx commands from docs and push to github
+# for those changes to be reflected on readthedocs
+
+# sphinx-apidoc -o . .. -f     # pushing after running this should be enough for readthedocs to be able to generate documentation
+# make clean                   # this command and the next one are for building the html locally
+# make html
+
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -10,9 +17,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../..'))
 
 
 # -- Project information -----------------------------------------------------
@@ -40,9 +47,9 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 
 autodoc_mock_imports = ['numpy',
-                        'scipy',
-                        'matplotlib',
-                        'pandas'
+                        'math',
+                        'random',
+                        'deepcopy'
 ]
 
 napolean_numpy_docstring = True
@@ -54,7 +61,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '*test*', '*main*']
+exclude_patterns = []
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -72,3 +79,6 @@ latex_engine = 'xelatex'
 
 #html_static_path = ['_static']
 html_static_path = []
+
+# from sphinx.ext.apidoc import main
+# main(["-o",  os.path.abspath('.'), os.path.abspath('..'), "-f"])

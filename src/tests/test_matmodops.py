@@ -1,6 +1,12 @@
+#!/usr/bin/env python
+
+import os
+import sys
+sys.path.insert(0, os.path.abspath('..'))
+
 import unittest
 
-from src.mrg32k3a.matmodops import *
+from mrg32k3a.base import *
 
 
 A = [[1, 2, 3],
