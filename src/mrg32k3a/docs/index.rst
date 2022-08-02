@@ -20,11 +20,6 @@ The `mrg32k3a <https://mrg32k3a.readthedocs.io/en/latest/mrg32k3a>`_ module incl
 
 The `matmodops <https://mrg32k3a.readthedocs.io/en/latest/matmodops>`_ module includes basic matrix/modulus operations used by the ``mrg32k3a`` module.
 
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
 References
 ----------
 * L'Ecuyer, Pierre (1990). `"Random numbers for simulation." <https://dl.acm.org/doi/10.1145/84537.84555>`_ *Communications of the ACM* 33(10):85-97.
@@ -32,3 +27,8 @@ References
 * L'Ecuyer, Pierre (1999). `"Good parameters and implementations for combined multiple recursive random number generators." <https://pubsonline.informs.org/doi/pdf/10.1287/opre.47.1.159>`_ *Operations Research* 47(1):159-164.
 
 * L'Ecuyer, Pierre, Richard Simard, E Jack Chen, and W. David Kelton (2002). `"An object-oriented random number package with many long streams and substreams." <https://pubsonline.informs.org/doi/10.1287/opre.50.6.1073.358>`_ *Operations Research* 50(6):1073-1075.
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:

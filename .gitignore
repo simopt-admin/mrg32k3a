@@ -11,3 +11,6 @@ __pycache__/
 # Environments
 .env
 .venv
+
+# Documentation
+src/mrg23k3a/docs/_build/
