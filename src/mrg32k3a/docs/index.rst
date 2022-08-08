@@ -10,7 +10,7 @@ This package provides a Python implementation of the mrg32k3a pseudo-random numb
 
 Details
 -------
-The `mrg32k3a <https://mrg32k3a.readthedocs.io/en/latest/mrg32k3a.html#module-mrg32k3a.mrg32k3a>`_ module includes the ``MRG32k3a`` class and several useful functions for controlling the generators.
+The **`mrg32k3a <https://mrg32k3a.readthedocs.io/en/latest/mrg32k3a.html#module-mrg32k3a.mrg32k3a>`_** module includes the ``MRG32k3a`` class and several useful functions for controlling the generators.
 
 * The ``MRG32k3a`` class is a subclass of Python's ``random.Random`` class and therefore inherits easy-to-use methods for generating random variates. E.g., if ``rng`` is an instance of the ``MRG32k3a`` class, the command ``rng.normalvariate(mu=2, sigma=5)`` generates a normal random variate with mean 2 and standard deviation 5.
 
@@ -18,7 +18,7 @@ The `mrg32k3a <https://mrg32k3a.readthedocs.io/en/latest/mrg32k3a.html#module-mr
 
 * The ``reset_stream``, ``reset_substream``, and ``reset_subsubstream`` functions reset the generator to the start of the current stream, substream, or subsubstream, respectively.
 
-The `matmodops <https://mrg32k3a.readthedocs.io/en/latest/mrg32k3a.html#module-mrg32k3a.matmodops>`_ module includes basic matrix/modulus operations used by the ``mrg32k3a`` module.
+The **`matmodops <https://mrg32k3a.readthedocs.io/en/latest/mrg32k3a.html#module-mrg32k3a.matmodops>`_** module includes basic matrix/modulus operations used by the ``mrg32k3a`` module.
 
 References
 ----------

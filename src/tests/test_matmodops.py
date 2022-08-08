@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 import unittest
 
-from mrg32k3a.base import *
+from src.mrg32k3a.matmodops import *
 
 
 A = [[1, 2, 3],

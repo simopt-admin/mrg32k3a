@@ -4,14 +4,6 @@ mrg32k3a package
 Submodules
 ----------
 
-mrg32k3a.base module
---------------------
-
-.. automodule:: mrg32k3a.base
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 mrg32k3a.matmodops module
 -------------------------
 
