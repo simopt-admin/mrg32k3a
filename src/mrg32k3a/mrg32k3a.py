@@ -13,7 +13,7 @@ import random
 from math import log, ceil, sqrt, exp
 from copy import deepcopy
 
-from src.mrg32k3a.matmodops import mat33_mat31_mult, mat33_mat33_mult, mat31_mod, mat33_mod, mat33_mat33_mod, mat33_power_mod
+from src.mrg32k3a.matmodops import mat33_mat31_mult, mat31_mod, mat33_power_mod
 
 # Constants used in mrg32k3a and in substream generation.
 # P. L'Ecuyer, ``Good Parameter Sets for Combined Multiple Recursive Random Number Generators'',
@@ -225,7 +225,7 @@ class MRG32k3a(random.Random):
         """
         assert(len(new_state) == 6)
         self._current_state = new_state
-        #super().seed(new_state)
+        # super().seed(new_state)
 
     def getstate(self):
         """Return the state of the generator.
@@ -341,7 +341,7 @@ class MRG32k3a(random.Random):
             True if we do not need to calculate Cholesky decomposition,
             i.e., if Cholesky decomposition is given as ``cov``;
             False otherwise.
-        
+
         Returns
         -------
         list [float]
@@ -402,6 +402,24 @@ class MRG32k3a(random.Random):
         u = self.random()
         q = mu - beta * np.log(-np.log(u))
         return q
+
+    def binomialvariate(self, n, p):
+        """Generate a Binomial(n, p) random variate.
+
+        Parameters
+        ----------
+        n : int
+            Number of i.i.d. Bernoulli trials; > 0.
+        p : float
+            Success probability of i.i.d. Bernoulli trials; in (0, 1).
+
+        Returns
+        -------
+        x : int
+            Binomial random variate from the specified distribution.
+        """
+        x = sum(self.choices(population=[0, 1], weights=[1 - p, p], k=n))
+        return x
 
     def integer_random_vector_from_simplex(self, n_elements, summation, with_zero=False):
         """Generate a random vector with a specified number of non-negative integer
