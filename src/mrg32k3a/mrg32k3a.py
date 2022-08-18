@@ -13,7 +13,7 @@ import random
 from math import log, ceil, sqrt, exp
 from copy import deepcopy
 
-from src.mrg32k3a.matmodops import mat33_mat31_mult, mat31_mod, mat33_power_mod
+from .matmodops import mat33_mat31_mult, mat31_mod, mat33_power_mod
 
 # Constants used in mrg32k3a and in substream generation.
 # P. L'Ecuyer, ``Good Parameter Sets for Combined Multiple Recursive Random Number Generators'',
@@ -304,7 +304,7 @@ class MRG32k3a(random.Random):
         z = bsm(u)
         return mu + sigma * z
 
-    def lognormalvariate(self, lq=10, uq=200):
+    def lognormalvariate(self, lq, uq):
         """Generate a Lognormal random variate using 2.5% and 97.5% quantiles
 
         Parameters
@@ -326,7 +326,7 @@ class MRG32k3a(random.Random):
         x = self.normalvariate(mu, sigma)
         return exp(x)
 
-    def mvnormalvariate(self, mean_vec, cov, factorized=True):
+    def mvnormalvariate(self, mean_vec, cov, factorized=False):
         """Generate a normal random vector.
 
         Parameters
@@ -337,7 +337,7 @@ class MRG32k3a(random.Random):
         cov : array
             Covariance matrix of the multivariate normal distribution
             from which to generate.
-        factorized : bool
+        factorized : bool, default=False
             True if we do not need to calculate Cholesky decomposition,
             i.e., if Cholesky decomposition is given as ``cov``;
             False otherwise.
@@ -360,7 +360,7 @@ class MRG32k3a(random.Random):
 
         Parameters
         ---------
-        lmbda : float
+        lmbda : float,
             Expected value of the Poisson distribution from which to
             generate.
 
@@ -392,7 +392,7 @@ class MRG32k3a(random.Random):
             generate.
         beta : float
             Scale parameter of the Gumbel distribution from which to
-            generate.
+            generate; > 0.
 
         Returns
         -------

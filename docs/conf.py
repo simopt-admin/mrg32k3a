@@ -51,7 +51,7 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 autodoc_mock_imports = ['numpy',
                         'math',
                         'random',
-                        'deepcopy'
+                        'copy'
 ]
 
 napolean_numpy_docstring = True
