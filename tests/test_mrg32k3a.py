@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.abspath('..'))
 import unittest
 
 from src.mrg32k3a.mrg32k3a import *
+from src.mrg32k3a.matmodops import mat33_mat33_mult
 
 A1p127 = [[2427906178, 3580155704, 949770784],
           [226153695, 1230515664, 3580155704],
