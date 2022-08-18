@@ -24,7 +24,7 @@ The **matmodops** module includes basic matrix/modulus operations used by the ``
 
 References
 ----------
-* Cooper, Kyle and Susan R. Hunter (2020). `"PyMOSO: Software for Multi-Objective Simulation Optimization with R-PERLE and R-MinRLE." <https://pubsonline.informs.org/doi/10.1287/ijoc.2019.0902>`_ *INFORMS Journal on Computing* 32(4): 1101-1108.
+* Cooper, Kyle and Susan R. Hunter (2020). `"PyMOSO: Software for multi-objective simulation optimization with R-PERLE and R-MinRLE." <https://pubsonline.informs.org/doi/10.1287/ijoc.2019.0902>`_ *INFORMS Journal on Computing* 32(4): 1101-1108.
 
 * L'Ecuyer, Pierre (1990). `"Random numbers for simulation." <https://dl.acm.org/doi/10.1145/84537.84555>`_ *Communications of the ACM* 33(10):85-97.
 

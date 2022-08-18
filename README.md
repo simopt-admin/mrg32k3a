@@ -56,7 +56,7 @@ returns a random length-3 vector `v` of positive integers summing to 10. The vec
 Full documentation for the `mrg32k3a` source code can be found [here](https://mrg32k3a.readthedocs.io/en/latest/).
 
 ### References
-* Cooper, Kyle and Susan R. Hunter (2020). [PyMOSO: Software for Multi-Objective Simulation Optimization with R-PERLE and R-MinRLE.](https://pubsonline.informs.org/doi/10.1287/ijoc.2019.0902) *INFORMS Journal on Computing* 32(4): 1101-1108.
+* Cooper, Kyle and Susan R. Hunter (2020). [PyMOSO: Software for multi-objective simulation optimization with R-PERLE and R-MinRLE.](https://pubsonline.informs.org/doi/10.1287/ijoc.2019.0902) *INFORMS Journal on Computing* 32(4): 1101-1108.
 * L'Ecuyer, Pierre (1990). [Random numbers for simulation.](https://dl.acm.org/doi/10.1145/84537.84555) *Communications of the ACM* 33(10):85-97.
 * L'Ecuyer, Pierre (1999). [Good parameters and implementations for combined multiple recursive random number generators.](https://pubsonline.informs.org/doi/pdf/10.1287/opre.47.1.159) *Operations Research* 47(1):159-164.
 * L'Ecuyer, Pierre, Richard Simard, E Jack Chen, and W. David Kelton (2002). [An object-oriented random number package with many long streams and substreams.](https://pubsonline.informs.org/doi/10.1287/opre.50.6.1073.358) *Operations Research* 50(6):1073-1075.
