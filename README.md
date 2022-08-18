@@ -48,7 +48,7 @@ returns a Poisson distributed random variate `x` with rate parameter (mean) 50.
 
 Finally,
 
-    v = integer_random_vector_from_simplex(n_elements=3, summation=10, with_zero=False))
+    v = rng.integer_random_vector_from_simplex(n_elements=3, summation=10, with_zero=False))
 
 returns a random length-3 vector `v` of positive integers summing to 10. The vector `v` is uniformly distributed over the set of such vectors.
 
