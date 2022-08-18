@@ -19,7 +19,7 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../src/mrg32k3a'))
 
 
 # -- Project information -----------------------------------------------------
@@ -40,7 +40,9 @@ release = '0.0.1'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx'
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.coverage'
 ]
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
