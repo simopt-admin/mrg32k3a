@@ -33,7 +33,7 @@ References
 * L'Ecuyer, Pierre, Richard Simard, E Jack Chen, and W. David Kelton (2002). `"An object-oriented random number package with many long streams and substreams." <https://pubsonline.informs.org/doi/10.1287/opre.50.6.1073.358>`_ *Operations Research* 50(6):1073-1075.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Contents:
 
    modules
