@@ -29,7 +29,7 @@ def mat33_mat31_mult(A, b):
 
 
 def mat33_mat33_mult(A, B):
-    """Multiply a 3x3 matrix with a 3x3 matrix.
+    """Multiply a 3 x 3 matrix with a 3 x 3 matrix.
 
     Parameters
     ----------

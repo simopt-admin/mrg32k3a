@@ -331,10 +331,10 @@ class MRG32k3a(random.Random):
 
         Parameters
         ---------
-        mean_vec : array
+        mean_vec : list [float]
             Location parameters of the multivariate normal distribution
             from which to generate.
-        cov : array
+        cov : list [list [float]]
             Covariance matrix of the multivariate normal distribution
             from which to generate.
         factorized : bool, default=False
@@ -360,7 +360,7 @@ class MRG32k3a(random.Random):
 
         Parameters
         ---------
-        lmbda : float,
+        lmbda : float
             Expected value of the Poisson distribution from which to
             generate.
 
@@ -436,7 +436,7 @@ class MRG32k3a(random.Random):
 
         Returns
         -------
-        vec: list of int
+        vec: list [int]
             A non-negative integer vector of length n_elements that sum to n_elements.
         """
         if with_zero is False:
