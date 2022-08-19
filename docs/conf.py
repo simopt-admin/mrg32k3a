@@ -51,8 +51,7 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 autodoc_mock_imports = ['numpy',
                         'math',
                         'random',
-                        'copy',
-                        'mrg32k3a'
+                        'copy'
 ]
 
 napolean_numpy_docstring = True
@@ -84,4 +83,4 @@ latex_engine = 'xelatex'
 html_static_path = []
 
 from sphinx.ext.apidoc import main
-main(["-o",  os.path.abspath('.'), os.path.abspath('../src/mrg32k3a'), "-f"])
+main(["-o",  os.path.abspath('.'), os.path.abspath('../src'), "-f"])
