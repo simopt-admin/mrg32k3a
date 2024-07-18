@@ -1,19 +1,15 @@
 #!/usr/bin/env python
-"""
-Summary
--------
-Provide a subclass of ``random.Random`` using mrg32k3a as the generator
-with stream/substream/subsubstream support.
-"""
+"""Provide a subclass of ``random.Random`` using mrg32k3a as the generator with stream/substream/subsubstream support."""
 
 # Code largely adopted from PyMOSO repository (https://github.com/pymoso/PyMOSO).
 
-import numpy as np
-import random
-from math import log, ceil, sqrt, exp
-from copy import deepcopy
+from __future__ import annotations
 
-from .matmodops import mat33_mat31_mult, mat31_mod, mat33_power_mod
+import random
+from copy import deepcopy
+from math import ceil, exp, log, sqrt
+
+import numpy as np
 
 # Constants used in mrg32k3a and in substream generation.
 # P. L'Ecuyer, ``Good Parameter Sets for Combined Multiple Recursive Random Number Generators'',
@@ -22,69 +18,105 @@ from .matmodops import mat33_mat31_mult, mat31_mod, mat33_power_mod
 # ``An Objected-Oriented Random-Number Package with Many Long Streams and Substreams'',
 # Operations Research, 50, 6 (2002), 1073--1075.
 
-mrgnorm = 2.328306549295727688e-10
-mrgm1 = 4294967087
-mrgm2 = 4294944443
-mrga12 = 1403580
-mrga13n = 810728
-mrga21 = 527612
-mrga23n = 1370589
+mrgnorm = 2.328306549295727688e-10  # 1.0 / 2**32
+mrgm1 = 4294967087  # 2**32 - 209
+mrgm2 = 4294944443  # 2**32 - 209*3*7*11
+mrga12 = 1403580  # 209*67
+mrga13n = 810728  # 209*19*17
+mrga21 = 527612  # 209*73
+mrga23n = 1370589  # 209*19*67
 
-A1p0 = [[0, 1, 0],
-        [0, 0, 1],
-        [-mrga13n, mrga12, 0]
-        ]
+A1p0 = np.array([[0, 1, 0], [0, 0, 1], [-mrga13n, mrga12, 0]], dtype=np.object_)
 
-A2p0 = [[0, 1, 0],
-        [0, 0, 1],
-        [-mrga23n, 0, mrga21]
-        ]
+A2p0 = np.array([[0, 1, 0], [0, 0, 1], [-mrga23n, 0, mrga21]], dtype=np.object_)
 
 # A1p47 = mat33_power_mod(A1p0, 2**47, mrgm1).
-A1p47 = [[1362557480, 3230022138, 4278720212],
-         [3427386258, 3848976950, 3230022138],
-         [2109817045, 2441486578, 3848976950]
-         ]
+A1p47 = np.array(
+    [
+        [1362557480, 3230022138, 4278720212],
+        [3427386258, 3848976950, 3230022138],
+        [2109817045, 2441486578, 3848976950],
+    ],
+    dtype=np.object_,
+)
 
 # A2p47 = mat33_power_mod(A2p0, 2**47, mrgm2).
-A2p47 = [[2920112852, 1965329198, 1177141043],
-         [2135250851, 2920112852, 969184056],
-         [296035385, 2135250851, 4267827987]
-         ]
+A2p47 = np.array(
+    [
+        [2920112852, 1965329198, 1177141043],
+        [2135250851, 2920112852, 969184056],
+        [296035385, 2135250851, 4267827987],
+    ],
+    dtype=np.object_,
+)
 
 # A1p94 = mat33_power_mod(A1p0, 2**94, mrgm1).
-A1p94 = [[2873769531, 2081104178, 596284397],
-         [4153800443, 1261269623, 2081104178],
-         [3967600061, 1830023157, 1261269623]
-         ]
+A1p94 = np.array(
+    [
+        [2873769531, 2081104178, 596284397],
+        [4153800443, 1261269623, 2081104178],
+        [3967600061, 1830023157, 1261269623],
+    ],
+    dtype=np.object_,
+)
 
 # A2p94 = mat33_power_mod(A2p0, 2**94, mrgm2).
-A2p94 = [[1347291439, 2050427676, 736113023],
-         [4102191254, 1347291439, 878627148],
-         [1293500383, 4102191254, 745646810]
-         ]
+A2p94 = np.array(
+    [
+        [1347291439, 2050427676, 736113023],
+        [4102191254, 1347291439, 878627148],
+        [1293500383, 4102191254, 745646810],
+    ],
+    dtype=np.object_,
+)
 
 # A1p141 = mat33_power_mod(A1p0, 2**141, mrgm1).
-A1p141 = [[3230096243, 2131723358, 3262178024],
-          [2882890127, 4088518247, 2131723358],
-          [3991553306, 1282224087, 4088518247]
-          ]
+A1p141 = np.array(
+    [
+        [3230096243, 2131723358, 3262178024],
+        [2882890127, 4088518247, 2131723358],
+        [3991553306, 1282224087, 4088518247],
+    ],
+    dtype=np.object_,
+)
 
 # A2p141 = mat33_power_mod(A2p0, 2**141, mrgm2).
-A2p141 = [[2196438580, 805386227, 4266375092],
-          [4124675351, 2196438580, 2527961345],
-          [94452540, 4124675351, 2825656399]
-          ]
+A2p141 = np.array(
+    [
+        [2196438580, 805386227, 4266375092],
+        [4124675351, 2196438580, 2527961345],
+        [94452540, 4124675351, 2825656399],
+    ],
+    dtype=np.object_,
+)
 
 # Constants used in Beasley-Springer-Moro algorithm for approximating
 # the inverse cdf of the standard normal distribution.
-bsma = [2.50662823884, -18.61500062529, 41.39119773534, -25.44106049637]
-bsmb = [-8.47351093090, 23.08336743743, -21.06224101826, 3.13082909833]
-bsmc = [0.3374754822726147, 0.9761690190917186, 0.1607979714918209, 0.0276438810333863, 0.0038405729373609, 0.0003951896511919, 0.0000321767881768, 0.0000002888167364, 0.0000003960315187]
+bsma = np.array(
+    [2.50662823884, -18.61500062529, 41.39119773534, -25.44106049637],
+    dtype=np.float64,
+)
+bsmb = np.array(
+    [-8.47351093090, 23.08336743743, -21.06224101826, 3.13082909833],
+    dtype=np.float64,
+)
+bsmc = np.array(
+    [
+        0.3374754822726147,
+        0.9761690190917186,
+        0.1607979714918209,
+        0.0276438810333863,
+        0.0038405729373609,
+        0.0003951896511919,
+        0.0000321767881768,
+        0.0000002888167364,
+        0.0000003960315187,
+    ]
+)
 
 
 # Adapted to pure Python from the P. L'Ecuyer code referenced above.
-def mrg32k3a(state):
+def mrg32k3a(state: tuple[int]) -> tuple[tuple[int], float]:
     """Generate a random number between 0 and 1 from a given state.
 
     Parameters
@@ -98,6 +130,7 @@ def mrg32k3a(state):
         Next state of the generator.
     u : float
         Pseudo uniform random variate.
+
     """
     # Component 1.
     p1 = mrga12 * state[1] - mrga13n * state[0]
@@ -120,9 +153,8 @@ def mrg32k3a(state):
     return new_state, u
 
 
-def bsm(u):
-    """Approximate a quantile of the standard normal distribution via
-    the Beasley-Springer-Moro algorithm.
+def bsm(u: float) -> float:
+    """Approximate a quantile of the standard normal distribution via the Beasley-Springer-Moro algorithm.
 
     Parameters
     ----------
@@ -133,6 +165,7 @@ def bsm(u):
     -------
     z : float
         Corresponding quantile of the standard normal distribution.
+
     """
     y = u - 0.5
     if abs(y) < 0.42:
@@ -141,8 +174,13 @@ def bsm(u):
         r2 = pow(r, 2)
         r3 = pow(r, 3)
         r4 = pow(r, 4)
-        asum = sum([bsma[0], bsma[1] * r, bsma[2] * r2, bsma[3] * r3])
-        bsum = sum([1, bsmb[0] * r, bsmb[1] * r2, bsmb[2] * r3, bsmb[3] * r4])
+        # DO NOT USE SUM HERE
+        # Starting with Python 3.12, the sum() function has been modified to
+        # use a more accurate algorithm for computing the sum of floating-point
+        # numbers. While theoretically more accurate, this change can lead to
+        # different results between Python 3.11- and Python 3.12+.
+        asum = bsma[0] + bsma[1] * r + bsma[2] * r2 + bsma[3] * r3
+        bsum = 1 + bsmb[0] * r + bsmb[1] * r2 + bsmb[2] * r3 + bsmb[3] * r4
         z = y * (asum / bsum)
     else:
         # Approximate from the tails (Moro 1995).
@@ -160,10 +198,57 @@ def bsm(u):
         s4 = pow(s, 6)
         s5 = pow(s, 7)
         s6 = pow(s, 8)
-        clst = [bsmc[0], bsmc[1] * s, bsmc[2] * s0, bsmc[3] * s1, bsmc[4] * s2, bsmc[5] * s3, bsmc[6] * s4, bsmc[7] * s5, bsmc[8] * s6]
-        t = sum(clst)
+        # DO NOT USE SUM HERE
+        # Starting with Python 3.12, the sum() function has been modified to
+        # use a more accurate algorithm for computing the sum of floating-point
+        # numbers. While theoretically more accurate, this change can lead to
+        # different results between Python 3.11- and Python 3.12+.
+        t = (
+            bsmc[0]
+            + bsmc[1] * s
+            + bsmc[2] * s0
+            + bsmc[3] * s1
+            + bsmc[4] * s2
+            + bsmc[5] * s3
+            + bsmc[6] * s4
+            + bsmc[7] * s5
+            + bsmc[8] * s6
+        )
         z = signum * t
     return z
+
+
+def power_mod(a: np.array, j: int, m: float) -> np.array:
+    """Compute moduli of a 3 x 3 matrix power.
+
+    Use divide-and-conquer algorithm described in L'Ecuyer (1990).
+
+    Parameters
+    ----------
+    a : np.array
+        3 x 3 matrix.
+    j : int
+        Exponent.
+    m : float
+        Modulus.
+
+    Returns
+    -------
+    np.array
+        3 x 3 matrix.
+
+    """
+    # Initialize B
+    b = np.eye(3, dtype=np.object_)
+
+    while j > 0:
+        if j % 2 == 1:
+            b = a @ b
+            b = b % m
+        a = np.linalg.matrix_power(a, 2)
+        a = a % m
+        j = int(j / 2)
+    return b
 
 
 class MRG32k3a(random.Random):
@@ -192,13 +277,36 @@ class MRG32k3a(random.Random):
     s_ss_sss_index : list [int], optional
         Triplet of the indices of the stream-substream-subsubstream to start at.
 
-    See also
+    See Also
     --------
     random.Random
+
     """
 
-    def __init__(self, ref_seed=(12345, 12345, 12345, 12345, 12345, 12345), s_ss_sss_index=None):
-        assert(len(ref_seed) == 6)
+    def __init__(
+        self,
+        ref_seed: tuple[int, int, int, int, int, int] = (
+            12345,
+            12345,
+            12345,
+            12345,
+            12345,
+            12345,
+        ),
+        s_ss_sss_index: list[int] | None = None,
+    ) -> None:
+        """Initialize the MRG32k3a generator.
+
+        Parameters
+        ----------
+        ref_seed : tuple [int], optional
+            Seed from which to start the generator.
+        s_ss_sss_index : list [int], optional
+            Triplet of the indices of the stream-substream-subsubstream to start at.
+
+        """
+        if not len(ref_seed) == 6:
+            raise ValueError("Seed must be a 6-tuple.")
         self.version = 2
         self.generate = mrg32k3a
         self.ref_seed = ref_seed
@@ -207,7 +315,20 @@ class MRG32k3a(random.Random):
             s_ss_sss_index = [0, 0, 0]
         self.start_fixed_s_ss_sss(s_ss_sss_index)
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: dict) -> MRG32k3a:
+        """Deepcopy the generator.
+
+        Parameters
+        ----------
+        memo : dict
+            Dictionary to store the copied objects.
+
+        Returns
+        -------
+        MRG32k3a
+            Deepcopy of the generator.
+
+        """
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
@@ -215,19 +336,25 @@ class MRG32k3a(random.Random):
             setattr(result, k, deepcopy(v, memo))
         return result
 
-    def seed(self, new_state):
+    def seed(self, new_state: tuple[int, int, int, int, int, int]) -> None:
         """Set the state (or seed) of the generator and update the generator state.
 
         Parameters
         ----------
         new_state : tuple [int]
             New state to which to advance the generator.
+
         """
-        assert(len(new_state) == 6)
+        if not len(new_state) == 6:
+            raise ValueError("Seed must be a 6-tuple.")
         self._current_state = new_state
         # super().seed(new_state)
 
-    def getstate(self):
+    def getstate(
+        self,
+    ) -> tuple[
+        tuple[int, int, int, int, int, int], tuple[int, int, int, int, int, int]
+    ]:
         """Return the state of the generator.
 
         Returns
@@ -237,13 +364,20 @@ class MRG32k3a(random.Random):
         tuple [int]
             Ouptput of ``random.Random.getstate()``.
 
-        See also
+        See Also
         --------
         random.Random
+
         """
         return self.get_current_state(), super().getstate()
 
-    def setstate(self, state):
+    def setstate(
+        self,
+        state: tuple[
+            tuple[int, int, int, int, int, int],
+            tuple[int, int, int, int, int, int],
+        ],
+    ) -> None:
         """Set the internal state of the generator.
 
         Parameters
@@ -252,46 +386,54 @@ class MRG32k3a(random.Random):
             ``state[0]`` is new state for the generator.
             ``state[1]`` is ``random.Random.getstate()``.
 
-        See also
+        See Also
         --------
         random.Random
+
         """
+        if not len(state) == 2:
+            raise ValueError("State must be a 2-tuple.")
+        if not len(state[0]) == 6:
+            raise ValueError("Seed must be a 6-tuple.")
+        if not len(state[1]) == 6:
+            raise ValueError("Random state must be a 6-tuple.")
         self.seed(state[0])
         super().setstate(state[1])
 
-    def random(self):
-        """Generate a standard uniform variate and advance the generator
-        state.
+    def random(self) -> float:
+        """Generate a standard uniform variate and advance the generator state.
 
         Returns
         -------
-        u : float
+        float
             Pseudo uniform random variate.
+
         """
         state = self._current_state
         new_state, u = self.generate(state)
         self.seed(new_state)
         return u
 
-    def get_current_state(self):
+    def get_current_state(self) -> tuple[int, int, int, int, int, int]:
         """Return the current state of the generator.
 
         Returns
         -------
         _current_state : tuple [int]
             Current state of the generator.
+
         """
         return self._current_state
 
-    def normalvariate(self, mu=0, sigma=1):
+    def normalvariate(self, mu: float = 0, sigma: float = 1) -> float:
         """Generate a normal random variate.
 
         Parameters
         ----------
-        mu : float
+        mu : float, optional
             Expected value of the normal distribution from which to
             generate.
-        sigma : float
+        sigma : float, optional
             Standard deviation of the normal distribution from which to
             generate.
 
@@ -299,13 +441,14 @@ class MRG32k3a(random.Random):
         -------
         float
             A normal random variate from the specified distribution.
+
         """
         u = self.random()
         z = bsm(u)
         return mu + sigma * z
 
-    def lognormalvariate(self, lq, uq):
-        """Generate a Lognormal random variate using 2.5% and 97.5% quantiles
+    def lognormalvariate(self, lq: float, uq: float) -> float:
+        """Generate a Lognormal random variate using 2.5% and 97.5% quantiles.
 
         Parameters
         ----------
@@ -320,17 +463,23 @@ class MRG32k3a(random.Random):
         -------
         float
             A lognormal random variate from the specified distribution.
+
         """
         mu = (log(lq) + log(uq)) / 2
         sigma = (log(uq) - mu) / 1.96
         x = self.normalvariate(mu, sigma)
         return exp(x)
 
-    def mvnormalvariate(self, mean_vec, cov, factorized=False):
+    def mvnormalvariate(
+        self,
+        mean_vec: list[float],
+        cov: list[list[float]],
+        factorized: bool = False,
+    ) -> list[float]:
         """Generate a normal random vector.
 
         Parameters
-        ---------
+        ----------
         mean_vec : list [float]
             Location parameters of the multivariate normal distribution
             from which to generate.
@@ -346,20 +495,21 @@ class MRG32k3a(random.Random):
         -------
         list [float]
             Multivariate normal random variate from the specified distribution.
+
         """
         n_cols = len(cov)
         if not factorized:
-            Chol = np.linalg.cholesky(cov)
+            chol = np.linalg.cholesky(cov)
         else:
-            Chol = cov
+            chol = cov
         observations = [self.normalvariate(0, 1) for _ in range(n_cols)]
-        return Chol.dot(observations).transpose() + mean_vec
+        return chol.dot(observations).transpose() + mean_vec
 
-    def poissonvariate(self, lmbda):
+    def poissonvariate(self, lmbda: float) -> int:
         """Generate a Poisson random variate.
 
         Parameters
-        ---------
+        ----------
         lmbda : float
             Expected value of the Poisson distribution from which to
             generate.
@@ -368,6 +518,7 @@ class MRG32k3a(random.Random):
         -------
         float
             Poisson random variate from the specified distribution.
+
         """
         if lmbda < 35:
             n = 0
@@ -382,11 +533,11 @@ class MRG32k3a(random.Random):
             n = max(ceil(lmbda + sqrt(lmbda) * z - 0.5), 0)
         return n
 
-    def gumbelvariate(self, mu, beta):
+    def gumbelvariate(self, mu: float, beta: float) -> float:
         """Generate a Gumbel random variate.
 
         Parameters
-        ---------
+        ----------
         mu : float
             Location of the mode of the Gumbel distribution from which to
             generate.
@@ -398,12 +549,13 @@ class MRG32k3a(random.Random):
         -------
         float
             Gumbel random variate from the specified distribution.
+
         """
         u = self.random()
         q = mu - beta * np.log(-np.log(u))
         return q
 
-    def binomialvariate(self, n, p):
+    def binomialvariate(self, n: int, p: float) -> int:
         """Generate a Binomial(n, p) random variate.
 
         Parameters
@@ -415,56 +567,64 @@ class MRG32k3a(random.Random):
 
         Returns
         -------
-        x : int
+        int
             Binomial random variate from the specified distribution.
+
         """
-        x = sum(self.choices(population=[0, 1], weights=[1 - p, p], k=n))
+        x = np.sum(self.choices(population=[0, 1], weights=[1 - p, p], k=n))
         return x
 
-    def integer_random_vector_from_simplex(self, n_elements, summation, with_zero=False):
-        """Generate a random vector with a specified number of non-negative integer
-        elements that sum up to a specified number.
+    def integer_random_vector_from_simplex(
+        self, n_elements: int, summation: int, with_zero: bool = False
+    ) -> list[int]:
+        """Generate a random vector with a specified number of non-negative integer elements that sum up to a specified number.
 
         Parameters
-        ---------
+        ----------
         n_elements : float
             Number of elements in the requested vector.
         summation : int
             Number to which the integer elements of the vector must sum.
-        with_zero: bool
+        with_zero: bool, optional
             True if zeros in the vector are permitted; False otherwise.
 
         Returns
         -------
-        vec: list [int]
+        list [int]
             A non-negative integer vector of length n_elements that sum to n_elements.
+
         """
         if with_zero is False:
             if n_elements > summation:
-                print("The sum cannot be greater than the number of positive integers requested.")
+                print(
+                    "The sum cannot be greater than the number of positive integers requested."
+                )
                 return
             else:
                 # Generate a vector of length n_elements by sampling without replacement from
                 # the set {1, 2, 3, ..., n_elements-1}. Sort it in ascending order, pre-append
                 # "0", and post-append "summation".
-                temp_x = self.sample(population=range(1, summation), k=n_elements - 1)
+                temp_x = self.sample(
+                    population=range(1, summation), k=n_elements - 1
+                )
                 temp_x.sort()
-                x = [0] + temp_x + [summation]
+                x = [0, *temp_x, summation]
                 # Take differences between consecutive terms. Result will sum to summation.
                 vec = [x[idx + 1] - x[idx] for idx in range(n_elements)]
         else:
-            temp_vec = self.integer_random_vectors_from_simplex(self,
-                                                                summation=summation + n_elements,
-                                                                n_elements=n_elements,
-                                                                with_zero=False
-                                                                )
+            temp_vec = self.integer_random_vectors_from_simplex(
+                self,
+                summation=summation + n_elements,
+                n_elements=n_elements,
+                with_zero=False,
+            )
             vec = [tv - 1 for tv in temp_vec]
         return vec
 
-    def continuous_random_vector_from_simplex(self, n_elements, summation=1.0, exact_sum=True):
-        """Generate a random vector with a specified number of non-negative
-        real-valued elements that sum up to (or less than or equal to) a
-        specified number.
+    def continuous_random_vector_from_simplex(
+        self, n_elements: int, summation: float, exact_sum: bool = False
+    ) -> list[float]:
+        """Generate a random vector with a specified number of non-negative real-valued elements that sum up to (or less than or equal to) a specified number.
 
         Parameters
         ----------
@@ -478,16 +638,17 @@ class MRG32k3a(random.Random):
 
         Returns
         -------
-        vec : list [float]
+        list [float]
             Vector of ``n_elements`` non-negative real-valued numbers that
             sum up to (or less than or equal to) ``summation``.
+
         """
         if exact_sum is True:
             # Generate a vector of length n_elements of i.i.d. Exponential(1)
             # random variates. Normalize all values by the sum and multiply by
             # "summation".
             exp_rvs = [self.expovariate(lambd=1) for _ in range(n_elements)]
-            exp_sum = sum(exp_rvs)
+            exp_sum = np.sum(exp_rvs)
             vec = [summation * x / exp_sum for x in exp_rvs]
         else:  # Sum must equal summation.
             # Follows Theorem 2.1 of "Non-Uniform Random Variate Generation" by DeVroye.
@@ -497,32 +658,39 @@ class MRG32k3a(random.Random):
             # "0", and post-append "summation".
             unif_rvs = [self.random() for _ in range(n_elements)]
             unif_rvs.sort()
-            x = [0] + unif_rvs + [1]
+            x = [0, *unif_rvs, 1]
             # Take differences between consecutive terms. Result will sum to 1.
-            diffs = np.array([x[idx + 1] - x[idx] for idx in range(n_elements + 1)])
+            diffs = np.array(
+                [x[idx + 1] - x[idx] for idx in range(n_elements + 1)]
+            )
             # Construct a matrix of the vertices of the simplex in R^d in regular position.
             # Includes zero vector and d unit vectors in R^d.
-            vertices = np.concatenate((np.zeros((1, n_elements)), np.identity(n=n_elements)), axis=0)
+            vertices = np.concatenate(
+                (np.zeros((1, n_elements)), np.identity(n=n_elements)), axis=0
+            )
             # Multiply each vertex by the corresponding term in diffs.
             # Then multiply each component by "summation" and sum the vectors
             # to get the convex combination of the vertices (scaled up to "summation").
-            vec = list(summation * np.sum(np.multiply(vertices, diffs[:, np.newaxis]), axis=0))
+            vec = list(
+                summation
+                * np.sum(np.multiply(vertices, diffs[:, np.newaxis]), axis=0)
+            )
         return vec
 
-    def advance_stream(self):
+    def advance_stream(self) -> None:
         """Advance the state of the generator to the start of the next stream.
+
         Streams are of length 2**141.
         """
         state = self.stream_start
         # Split the state into 2 components of length 3.
-        st1 = state[0:3]
-        st2 = state[3:6]
+        st1 = np.array(state[0:3])
+        st2 = np.array(state[3:6])
         # Efficiently advance state -> A*s % m for both state parts.
-        nst1m = mat33_mat31_mult(A1p141, st1)
-        nst2m = mat33_mat31_mult(A2p141, st2)
-        nst1 = mat31_mod(nst1m, mrgm1)
-        nst2 = mat31_mod(nst2m, mrgm2)
-        nstate = tuple(nst1 + nst2)
+        nst1 = (A1p141 @ st1) % mrgm1
+        nst2 = (A2p141 @ st2) % mrgm2
+        # Combine the 2 components into a single state.
+        nstate = tuple(np.concatenate((nst1, nst2)))
         self.seed(nstate)
         # Increment the stream index.
         self.s_ss_sss_index[0] += 1
@@ -534,20 +702,20 @@ class MRG32k3a(random.Random):
         self.substream_start = nstate
         self.subsubstream_start = nstate
 
-    def advance_substream(self):
+    def advance_substream(self) -> None:
         """Advance the state of the generator to the start of the next substream.
+
         Substreams are of length 2**94.
         """
         state = self.substream_start
         # Split the state into 2 components of length 3.
-        st1 = state[0:3]
-        st2 = state[3:6]
+        st1 = np.array(state[0:3])
+        st2 = np.array(state[3:6])
         # Efficiently advance state -> A*s % m for both state parts.
-        nst1m = mat33_mat31_mult(A1p94, st1)
-        nst2m = mat33_mat31_mult(A2p94, st2)
-        nst1 = mat31_mod(nst1m, mrgm1)
-        nst2 = mat31_mod(nst2m, mrgm2)
-        nstate = tuple(nst1 + nst2)
+        nst1 = (A1p94 @ st1) % mrgm1
+        nst2 = (A2p94 @ st2) % mrgm2
+        # Combine the 2 components into a single state.
+        nstate = tuple(np.concatenate((nst1, nst2)))
         self.seed(nstate)
         # Increment the substream index.
         self.s_ss_sss_index[1] += 1
@@ -557,29 +725,28 @@ class MRG32k3a(random.Random):
         self.substream_start = nstate
         self.subsubstream_start = nstate
 
-    def advance_subsubstream(self):
+    def advance_subsubstream(self) -> None:
         """Advance the state of the generator to the start of the next subsubstream.
+
         Subsubstreams are of length 2**47.
         """
         state = self.subsubstream_start
         # Split the state into 2 components of length 3.
-        st1 = state[0:3]
-        st2 = state[3:6]
+        st1 = np.array(state[0:3])
+        st2 = np.array(state[3:6])
         # Efficiently advance state -> A*s % m for both state parts.
-        nst1m = mat33_mat31_mult(A1p47, st1)
-        nst2m = mat33_mat31_mult(A2p47, st2)
-        nst1 = mat31_mod(nst1m, mrgm1)
-        nst2 = mat31_mod(nst2m, mrgm2)
-        nstate = tuple(nst1 + nst2)
+        nst1 = (A1p47 @ st1) % mrgm1
+        nst2 = (A2p47 @ st2) % mrgm2
+        # Combine the 2 components into a single state.
+        nstate = tuple(np.concatenate((nst1, nst2)))
         self.seed(nstate)
         # Increment the subsubstream index.
         self.s_ss_sss_index[2] += 1
         # Update state referencing.
         self.subsubstream_start = nstate
 
-    def reset_stream(self):
-        """Reset the state of the generator to the start of the current stream.
-        """
+    def reset_stream(self) -> None:
+        """Reset the state of the generator to the start of the current stream."""
         nstate = self.stream_start
         self.seed(nstate)
         # Update state referencing.
@@ -589,9 +756,8 @@ class MRG32k3a(random.Random):
         self.s_ss_sss_index[1] = 0
         self.s_ss_sss_index[2] = 0
 
-    def reset_substream(self):
-        """Reset the state of the generator to the start of the current substream.
-        """
+    def reset_substream(self) -> None:
+        """Reset the state of the generator to the start of the current substream."""
         nstate = self.substream_start
         self.seed(nstate)
         # Update state referencing.
@@ -599,46 +765,52 @@ class MRG32k3a(random.Random):
         # Reset index for subsubstream.
         self.s_ss_sss_index[2] = 0
 
-    def reset_subsubstream(self):
-        """Reset the state of the generator to the start of the current subsubstream.
-        """
+    def reset_subsubstream(self) -> None:
+        """Reset the state of the generator to the start of the current subsubstream."""
         nstate = self.subsubstream_start
         self.seed(nstate)
 
-    def start_fixed_s_ss_sss(self, s_ss_sss_triplet):
+    def start_fixed_s_ss_sss(self, s_ss_sss_triplet: list[int]) -> None:
         """Set the rng to the start of a specified (stream, substream, subsubstream) triplet.
 
         Parameters
         ----------
         s_ss_sss_triplet : list [int]
             Triplet of the indices of the current stream-substream-subsubstream.
+
         """
         state = self.ref_seed
         # Split the reference seed into 2 components of length 3.
-        st1 = state[0:3]
-        st2 = state[3:6]
+        st1 = np.array(state[0:3])
+        st2 = np.array(state[3:6])
         # Advance to start of specified stream.
         # Efficiently advance state -> A*s % m for both state parts.
-        nst1m = mat33_mat31_mult(mat33_power_mod(A1p141, s_ss_sss_triplet[0], mrgm1), st1)
-        nst2m = mat33_mat31_mult(mat33_power_mod(A2p141, s_ss_sss_triplet[0], mrgm2), st2)
-        st1 = mat31_mod(nst1m, mrgm1)
-        st2 = mat31_mod(nst2m, mrgm2)
-        self.stream_start = tuple(st1 + st2)
+        power_mod_1 = power_mod(A1p141, s_ss_sss_triplet[0], mrgm1)
+        power_mod_2 = power_mod(A2p141, s_ss_sss_triplet[0], mrgm2)
+        nst1m = power_mod_1 @ st1
+        nst2m = power_mod_2 @ st2
+        st1 = nst1m % mrgm1
+        st2 = nst2m % mrgm2
+        self.stream_start = tuple(np.concatenate((st1, st2)))
         # Advance to start of specified substream.
         # Efficiently advance state -> A*s % m for both state parts.
-        nst1m = mat33_mat31_mult(mat33_power_mod(A1p94, s_ss_sss_triplet[1], mrgm1), st1)
-        nst2m = mat33_mat31_mult(mat33_power_mod(A2p94, s_ss_sss_triplet[1], mrgm2), st2)
-        st1 = mat31_mod(nst1m, mrgm1)
-        st2 = mat31_mod(nst2m, mrgm2)
-        self.substream_start = tuple(st1 + st2)
+        power_mod_1 = power_mod(A1p94, s_ss_sss_triplet[1], mrgm1)
+        power_mod_2 = power_mod(A2p94, s_ss_sss_triplet[1], mrgm2)
+        nst1m = power_mod_1 @ st1
+        nst2m = power_mod_2 @ st2
+        st1 = nst1m % mrgm1
+        st2 = nst2m % mrgm2
+        self.substream_start = tuple(np.concatenate((st1, st2)))
         # Advance to start of specified subsubstream.
         # Efficiently advance state -> A*s % m for both state parts.
-        nst1m = mat33_mat31_mult(mat33_power_mod(A1p47, s_ss_sss_triplet[2], mrgm1), st1)
-        nst2m = mat33_mat31_mult(mat33_power_mod(A2p47, s_ss_sss_triplet[2], mrgm2), st2)
-        st1 = mat31_mod(nst1m, mrgm1)
-        st2 = mat31_mod(nst2m, mrgm2)
-        self.subsubstream_start = tuple(st1 + st2)
-        nstate = tuple(st1 + st2)
+        power_mod_1 = power_mod(A1p47, s_ss_sss_triplet[2], mrgm1)
+        power_mod_2 = power_mod(A2p47, s_ss_sss_triplet[2], mrgm2)
+        nst1m = power_mod_1 @ st1
+        nst2m = power_mod_2 @ st2
+        st1 = nst1m % mrgm1
+        st2 = nst2m % mrgm2
+        self.subsubstream_start = tuple(np.concatenate((st1, st2)))
+        nstate = self.subsubstream_start
         self.seed(nstate)
         # Update index referencing.
         self.s_ss_sss_index = s_ss_sss_triplet
