@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mrg32k3a"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
   { name="David Eckman", email="eckman@tamu.edu" },
   { name="Shane Henderson", email="sgh9@cornell.edu" },
