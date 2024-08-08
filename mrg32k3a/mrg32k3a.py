@@ -27,68 +27,7 @@ mrga21 = 527612  # 209*73
 mrga23n = 1370589  # 209*19*67
 
 A1p0 = np.array([[0, 1, 0], [0, 0, 1], [-mrga13n, mrga12, 0]], dtype=np.object_)
-
 A2p0 = np.array([[0, 1, 0], [0, 0, 1], [-mrga23n, 0, mrga21]], dtype=np.object_)
-
-# A1p47 = mat33_power_mod(A1p0, 2**47, mrgm1).
-A1p47 = np.array(
-    [
-        [1362557480, 3230022138, 4278720212],
-        [3427386258, 3848976950, 3230022138],
-        [2109817045, 2441486578, 3848976950],
-    ],
-    dtype=np.object_,
-)
-
-# A2p47 = mat33_power_mod(A2p0, 2**47, mrgm2).
-A2p47 = np.array(
-    [
-        [2920112852, 1965329198, 1177141043],
-        [2135250851, 2920112852, 969184056],
-        [296035385, 2135250851, 4267827987],
-    ],
-    dtype=np.object_,
-)
-
-# A1p94 = mat33_power_mod(A1p0, 2**94, mrgm1).
-A1p94 = np.array(
-    [
-        [2873769531, 2081104178, 596284397],
-        [4153800443, 1261269623, 2081104178],
-        [3967600061, 1830023157, 1261269623],
-    ],
-    dtype=np.object_,
-)
-
-# A2p94 = mat33_power_mod(A2p0, 2**94, mrgm2).
-A2p94 = np.array(
-    [
-        [1347291439, 2050427676, 736113023],
-        [4102191254, 1347291439, 878627148],
-        [1293500383, 4102191254, 745646810],
-    ],
-    dtype=np.object_,
-)
-
-# A1p141 = mat33_power_mod(A1p0, 2**141, mrgm1).
-A1p141 = np.array(
-    [
-        [3230096243, 2131723358, 3262178024],
-        [2882890127, 4088518247, 2131723358],
-        [3991553306, 1282224087, 4088518247],
-    ],
-    dtype=np.object_,
-)
-
-# A2p141 = mat33_power_mod(A2p0, 2**141, mrgm2).
-A2p141 = np.array(
-    [
-        [2196438580, 805386227, 4266375092],
-        [4124675351, 2196438580, 2527961345],
-        [94452540, 4124675351, 2825656399],
-    ],
-    dtype=np.object_,
-)
 
 # Constants used in Beasley-Springer-Moro algorithm for approximating
 # the inverse cdf of the standard normal distribution.
@@ -116,40 +55,52 @@ bsmc = np.array(
 
 
 # Adapted to pure Python from the P. L'Ecuyer code referenced above.
-def mrg32k3a(state: tuple[int]) -> tuple[tuple[int], float]:
+def mrg32k3a(
+    state: tuple[int, int, int, int, int, int],
+) -> tuple[tuple[int, int, int, int, int, int], float]:
     """Generate a random number between 0 and 1 from a given state.
 
     Parameters
     ----------
-    state : tuple [int]
+    state : tuple [int, int, int, int, int, int]
         Current state of the generator.
 
     Returns
     -------
-    new_state : tuple [int]
+    tuple [int, int, int, int, int, int]
         Next state of the generator.
-    u : float
+    float
         Pseudo uniform random variate.
 
     """
-    # Component 1.
-    p1 = mrga12 * state[1] - mrga13n * state[0]
-    k1 = int(p1 / mrgm1)
-    p1 -= k1 * mrgm1
-    if p1 < 0.0:
-        p1 += mrgm1
-    # Component 2.
-    p2 = mrga21 * state[5] - mrga23n * state[3]
-    k2 = int(p2 / mrgm2)
-    p2 -= k2 * mrgm2
-    if p2 < 0.0:
-        p2 += mrgm2
-    # Combination.
-    if p1 <= p2:
-        u = (p1 - p2 + mrgm1) * mrgnorm
+    # Split state into two 3-tuples.
+    # The 4th element is a placeholder for the next value.
+    x1 = [state[0], state[1], state[2], 0]
+    x2 = [state[3], state[4], state[5], 0]
+
+    n = 3  # Next index to update (matches the source paper name)
+    # Update state.
+    x1[n] = (mrga12 * x1[n - 2] - mrga13n * x1[n - 3]) % mrgm1
+    x2[n] = (mrga21 * x2[n - 1] - mrga23n * x2[n - 3]) % mrgm2
+
+    # Calculate uniform random variate.
+    z = (x1[n] - x2[n]) % mrgm1
+    if z > 0:
+        u = z / (mrgm1 + 1)
+    elif z == 0:
+        u = mrgm1 / (mrgm1 + 1)
     else:
-        u = (p1 - p2) * mrgnorm
-    new_state = (state[1], state[2], int(p1), state[4], state[5], int(p2))
+        # This should never happen.
+        raise ValueError("Invalid value for z.")
+
+    # Get rid of the first element in both lists.
+    # This advances N by 1.
+    x1 = x1[1:]
+    x2 = x2[1:]
+    # Create new state.
+    new_state = tuple(x1 + x2)
+    assert len(new_state) == 6
+    # Return new state and uniform random variate.
     return new_state, u
 
 
@@ -163,7 +114,7 @@ def bsm(u: float) -> float:
 
     Returns
     -------
-    z : float
+    float
         Corresponding quantile of the standard normal distribution.
 
     """
@@ -218,14 +169,14 @@ def bsm(u: float) -> float:
     return z
 
 
-def power_mod(a: np.array, j: int, m: float) -> np.array:
+def power_mod(a: np.ndarray, j: int, m: float) -> np.ndarray:
     """Compute moduli of a 3 x 3 matrix power.
 
     Use divide-and-conquer algorithm described in L'Ecuyer (1990).
 
     Parameters
     ----------
-    a : np.array
+    a : np.ndarray
         3 x 3 matrix.
     j : int
         Exponent.
@@ -234,7 +185,7 @@ def power_mod(a: np.array, j: int, m: float) -> np.array:
 
     Returns
     -------
-    np.array
+    np.ndarray
         3 x 3 matrix.
 
     """
@@ -249,6 +200,14 @@ def power_mod(a: np.array, j: int, m: float) -> np.array:
         a = a % m
         j = int(j / 2)
     return b
+
+
+A1p47 = power_mod(A1p0, 2**47, mrgm1)
+A2p47 = power_mod(A2p0, 2**47, mrgm2)
+A1p94 = power_mod(A1p0, 2**94, mrgm1)
+A2p94 = power_mod(A2p0, 2**94, mrgm2)
+A1p141 = power_mod(A1p0, 2**141, mrgm1)
+A2p141 = power_mod(A2p0, 2**141, mrgm2)
 
 
 class MRG32k3a(random.Random):
@@ -269,13 +228,6 @@ class MRG32k3a(random.Random):
         State corresponding to the start of the current substream.
     subsubstream_start: list [int]
         State corresponding to the start of the current subsubstream.
-
-    Parameters
-    ----------
-    ref_seed : tuple [int], optional
-        Seed from which to start the generator.
-    s_ss_sss_index : list [int], optional
-        Triplet of the indices of the stream-substream-subsubstream to start at.
 
     See Also
     --------
@@ -299,7 +251,7 @@ class MRG32k3a(random.Random):
 
         Parameters
         ----------
-        ref_seed : tuple [int], optional
+        ref_seed : tuple [int, int, int, int, int, int], optional
             Seed from which to start the generator.
         s_ss_sss_index : list [int], optional
             Triplet of the indices of the stream-substream-subsubstream to start at.
@@ -310,7 +262,8 @@ class MRG32k3a(random.Random):
         self.version = 2
         self.generate = mrg32k3a
         self.ref_seed = ref_seed
-        super().__init__(ref_seed)
+        self.seed(ref_seed)
+        self.gauss_next = None
         if s_ss_sss_index is None:
             s_ss_sss_index = [0, 0, 0]
         self.start_fixed_s_ss_sss(s_ss_sss_index)
@@ -359,9 +312,9 @@ class MRG32k3a(random.Random):
 
         Returns
         -------
-        tuple [int]
+        tuple [int, int, int, int, int, int]
             Current state of the generator, ``_current_state``.
-        tuple [int]
+        tuple [int, int, int, int, int, int]
             Ouptput of ``random.Random.getstate()``.
 
         See Also
@@ -382,7 +335,7 @@ class MRG32k3a(random.Random):
 
         Parameters
         ----------
-        state : tuple
+        state : tuple[tuple[int, int, int, int, int, int], tuple[int, int, int, int, int, int]]
             ``state[0]`` is new state for the generator.
             ``state[1]`` is ``random.Random.getstate()``.
 
@@ -419,7 +372,7 @@ class MRG32k3a(random.Random):
 
         Returns
         -------
-        _current_state : tuple [int]
+        tuple [int, int, int, int, int, int]
             Current state of the generator.
 
         """
@@ -473,7 +426,7 @@ class MRG32k3a(random.Random):
     def mvnormalvariate(
         self,
         mean_vec: list[float],
-        cov: list[list[float]],
+        cov: np.ndarray,
         factorized: bool = False,
     ) -> list[float]:
         """Generate a normal random vector.
@@ -596,24 +549,18 @@ class MRG32k3a(random.Random):
         """
         if with_zero is False:
             if n_elements > summation:
-                print(
-                    "The sum cannot be greater than the number of positive integers requested."
-                )
-                return
-            else:
-                # Generate a vector of length n_elements by sampling without replacement from
-                # the set {1, 2, 3, ..., n_elements-1}. Sort it in ascending order, pre-append
-                # "0", and post-append "summation".
-                temp_x = self.sample(
-                    population=range(1, summation), k=n_elements - 1
-                )
-                temp_x.sort()
-                x = [0, *temp_x, summation]
-                # Take differences between consecutive terms. Result will sum to summation.
-                vec = [x[idx + 1] - x[idx] for idx in range(n_elements)]
+                error_msg = "The sum cannot be greater than the number of positive integers requested."
+                raise ValueError(error_msg)
+            # Generate a vector of length n_elements by sampling without replacement from
+            # the set {1, 2, 3, ..., n_elements-1}. Sort it in ascending order, pre-append
+            # "0", and post-append "summation".
+            temp_x = self.sample(population=range(1, summation), k=n_elements - 1)
+            temp_x.sort()
+            x = [0, *temp_x, summation]
+            # Take differences between consecutive terms. Result will sum to summation.
+            vec = [x[idx + 1] - x[idx] for idx in range(n_elements)]
         else:
-            temp_vec = self.integer_random_vectors_from_simplex(
-                self,
+            temp_vec = self.integer_random_vector_from_simplex(
                 summation=summation + n_elements,
                 n_elements=n_elements,
                 with_zero=False,
@@ -660,9 +607,7 @@ class MRG32k3a(random.Random):
             unif_rvs.sort()
             x = [0, *unif_rvs, 1]
             # Take differences between consecutive terms. Result will sum to 1.
-            diffs = np.array(
-                [x[idx + 1] - x[idx] for idx in range(n_elements + 1)]
-            )
+            diffs = np.array([x[idx + 1] - x[idx] for idx in range(n_elements + 1)])
             # Construct a matrix of the vertices of the simplex in R^d in regular position.
             # Includes zero vector and d unit vectors in R^d.
             vertices = np.concatenate(
@@ -672,8 +617,7 @@ class MRG32k3a(random.Random):
             # Then multiply each component by "summation" and sum the vectors
             # to get the convex combination of the vertices (scaled up to "summation").
             vec = list(
-                summation
-                * np.sum(np.multiply(vertices, diffs[:, np.newaxis]), axis=0)
+                summation * np.sum(np.multiply(vertices, diffs[:, np.newaxis]), axis=0)
             )
         return vec
 
