@@ -306,7 +306,7 @@ class MRG32k3a(random.Random):
     def getstate(
         self,
     ) -> tuple[
-        tuple[int, int, int, int, int, int], tuple[int, int, int, int, int, int]
+        tuple[int, int, int, int, int, int], tuple
     ]:
         """Return the state of the generator.
 
@@ -314,7 +314,7 @@ class MRG32k3a(random.Random):
         -------
         tuple [int, int, int, int, int, int]
             Current state of the generator, ``_current_state``.
-        tuple [int, int, int, int, int, int]
+        tuple
             Ouptput of ``random.Random.getstate()``.
 
         See Also
@@ -328,14 +328,14 @@ class MRG32k3a(random.Random):
         self,
         state: tuple[
             tuple[int, int, int, int, int, int],
-            tuple[int, int, int, int, int, int],
+            tuple,
         ],
     ) -> None:
         """Set the internal state of the generator.
 
         Parameters
         ----------
-        state : tuple[tuple[int, int, int, int, int, int], tuple[int, int, int, int, int, int]]
+        state : tuple[tuple[int, int, int, int, int, int], tuple]
             ``state[0]`` is new state for the generator.
             ``state[1]`` is ``random.Random.getstate()``.
 
@@ -344,12 +344,14 @@ class MRG32k3a(random.Random):
         random.Random
 
         """
-        if not len(state) == 2:
-            raise ValueError("State must be a 2-tuple.")
-        if not len(state[0]) == 6:
-            raise ValueError("Seed must be a 6-tuple.")
-        if not len(state[1]) == 6:
-            raise ValueError("Random state must be a 6-tuple.")
+        try:
+            assert isinstance(state, tuple), "State must be a 2-tuple."
+            assert len(state) == 2, "State must be a 2-tuple."
+            assert isinstance(state[0], tuple), "Seed must be a 6-tuple of integers."
+            assert len(state[0]) == 6, "Seed must be a 6-tuple of integers."
+            assert all(isinstance(x, int) for x in state[0]), "Seed must be a 6-tuple of integers."
+        except AssertionError as e:
+            raise ValueError(e)
         self.seed(state[0])
         super().setstate(state[1])
 
