@@ -306,7 +306,7 @@ class MRG32k3a(random.Random):
     def getstate(
         self,
     ) -> tuple[
-        tuple[int, int, int, int, int, int], tuple[int, int, int, int, int, int]
+        tuple[int, int, int, int, int, int], tuple
     ]:
         """Return the state of the generator.
 
@@ -314,7 +314,7 @@ class MRG32k3a(random.Random):
         -------
         tuple [int, int, int, int, int, int]
             Current state of the generator, ``_current_state``.
-        tuple [int, int, int, int, int, int]
+        tuple
             Ouptput of ``random.Random.getstate()``.
 
         See Also
@@ -328,14 +328,14 @@ class MRG32k3a(random.Random):
         self,
         state: tuple[
             tuple[int, int, int, int, int, int],
-            tuple[int, int, int, int, int, int],
+            tuple,
         ],
     ) -> None:
         """Set the internal state of the generator.
 
         Parameters
         ----------
-        state : tuple[tuple[int, int, int, int, int, int], tuple[int, int, int, int, int, int]]
+        state : tuple[tuple[int, int, int, int, int, int], tuple]
             ``state[0]`` is new state for the generator.
             ``state[1]`` is ``random.Random.getstate()``.
 
