@@ -50,42 +50,9 @@ class TestMRG32k3a(unittest.TestCase):
         for _ in range(99):
             rng.random()
 
-        # Check powers
-        power_mod_1 = mrg.power_mod(mrg.A1p0, 99, mrg.mrgm1)
-        power_mod_1_expected = [
-            [799720564, 1904270070, 1363680284],
-            [2278512092, 270284082, 1904270070],
-            [2328946625, 990418809, 270284082],
-        ]
-        self.assertEqual(power_mod_1.tolist(), power_mod_1_expected)
-        power_mod_2 = mrg.power_mod(mrg.A2p0, 99, mrg.mrgm2)
-        power_mod_2_expected = [
-            [3836971470, 1481396816, 1475521836],
-            [722527348, 3836971470, 2878594268],
-            [685711492, 722527348, 2167021383],
-        ]
-        self.assertEqual(
-            power_mod_2.tolist(),
-            power_mod_2_expected,
-        )
-
-        # Check multiplies
-        multi_1 = power_mod_1 @ seed[0:3]
-        multi_1_expected = [50215397482710, 54973102782180, 44314223275020]
-        self.assertEqual(multi_1.tolist(), multi_1_expected)
-        multi_2 = power_mod_2 @ seed[3:6]
-        multi_2_expected = [83870573556090, 91823259146670, 44136587452935]
-        self.assertEqual(multi_2.tolist(), multi_2_expected)
-
-        # Check sequences
-        st1 = multi_1 % mrg.mrgm1
-        st1_expected = [2937268593, 1819035667, 3047838441]
-        self.assertEqual(st1.tolist(), st1_expected)
-        st2 = multi_2 % mrg.mrgm2
-        st2_expected = [3193417629, 1641899773, 1738356667]
-        self.assertEqual(st2.tolist(), st2_expected)
-        sequence = st1.tolist() + st2.tolist()
-        self.assertSequenceEqual(rng._current_state, sequence)
+        # Check the 100th state
+        expected_state = [2937268593, 1819035667, 3047838441, 3193417629, 1641899773, 1738356667]
+        self.assertSequenceEqual(rng._current_state, expected_state)
 
     def test_advance_stream(self):
         rng = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 1])

@@ -20,15 +20,15 @@ import numpy as np
 
 # Page 162, Table II
 # J = 2, K = 3
-mrgm1 = 4294967087  # 2**32 - 209
-mrgm2 = 4294944443  # 2**32 - 22853
-mrga12 = 1403580  # 209*67
-mrga13n = -810728  # 209*19*17
-mrga21 = 527612  # 209*73
-mrga23n = -1370589  # 209*19*67
+mrgm1 = np.int64(4294967087)
+mrgm2 = np.int64(4294944443)
+mrga12 = np.int64(1403580)
+mrga13n = np.int64(-810728)
+mrga21 = np.int64(527612)
+mrga23n = np.int64(-1370589)
 
-A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga13n, mrga12, 0]], dtype=np.object_)
-A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga23n, 0, mrga21]], dtype=np.object_)
+A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga13n, mrga12, 0]], dtype=np.int64)
+A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga23n, 0, mrga21]], dtype=np.int64)
 
 # Constants used in Beasley-Springer-Moro algorithm for approximating
 # the inverse cdf of the standard normal distribution.
@@ -77,8 +77,8 @@ def mrg32k3a(
     """
     # Split state into two 3-tuples.
     # The 4th element is a placeholder for the next value.
-    x1 = [state[0], state[1], state[2], 0]
-    x2 = [state[3], state[4], state[5], 0]
+    x1 = np.array([state[0], state[1], state[2], 0], dtype=np.int64)
+    x2 = np.array([state[3], state[4], state[5], 0], dtype=np.int64)
 
     n = 3  # Next index to update (matches the source paper name)
     # Update state.
@@ -100,7 +100,7 @@ def mrg32k3a(
     x1 = x1[1:]
     x2 = x2[1:]
     # Create new state.
-    new_state = tuple(x1 + x2)
+    new_state = tuple(np.concatenate((x1, x2)))
     assert len(new_state) == 6
     # Return new state and uniform random variate.
     return new_state, u
@@ -132,8 +132,8 @@ def bsm(u: float) -> float:
         # use a more accurate algorithm for computing the sum of floating-point
         # numbers. While theoretically more accurate, this change can lead to
         # different results between Python 3.11- and Python 3.12+.
-        asum = bsma[0] + bsma[1] * r + bsma[2] * r2 + bsma[3] * r3
-        bsum = 1 + bsmb[0] * r + bsmb[1] * r2 + bsmb[2] * r3 + bsmb[3] * r4
+        asum = np.sum(bsma[0], bsma[1] * r, bsma[2] * r2, bsma[3] * r3)
+        bsum = np.sum(1, bsmb[0] * r, bsmb[1] * r2, bsmb[2] * r3, bsmb[3] * r4)
         z = y * (asum / bsum)
     else:
         # Approximate from the tails (Moro 1995).
@@ -156,22 +156,12 @@ def bsm(u: float) -> float:
         # use a more accurate algorithm for computing the sum of floating-point
         # numbers. While theoretically more accurate, this change can lead to
         # different results between Python 3.11- and Python 3.12+.
-        t = (
-            bsmc[0]
-            + bsmc[1] * s
-            + bsmc[2] * s0
-            + bsmc[3] * s1
-            + bsmc[4] * s2
-            + bsmc[5] * s3
-            + bsmc[6] * s4
-            + bsmc[7] * s5
-            + bsmc[8] * s6
-        )
+        t = np.sum(bsmc[0], bsmc[1] * s, bsmc[2] * s0, bsmc[3] * s1, bsmc[4] * s2, bsmc[5] * s3, bsmc[6] * s4, bsmc[7] * s5, bsmc[8] * s6)
         z = signum * t
     return z
 
 
-def power_mod(a: np.ndarray, j: int, m: float) -> np.ndarray:
+def power_mod(a: np.ndarray, j: int, m: np.int64) -> np.ndarray:
     """Compute moduli of a 3 x 3 matrix power.
 
     Use divide-and-conquer algorithm described in L'Ecuyer (1990).
@@ -182,7 +172,7 @@ def power_mod(a: np.ndarray, j: int, m: float) -> np.ndarray:
         3 x 3 matrix.
     j : int
         Exponent.
-    m : float
+    m : np.int64
         Modulus.
 
     Returns
@@ -192,15 +182,16 @@ def power_mod(a: np.ndarray, j: int, m: float) -> np.ndarray:
 
     """
     # Initialize B
-    b = np.eye(3, dtype=np.object_)
+    b = np.eye(3, dtype=np.int64)
 
     while j > 0:
-        if j % 2 == 1:
+        # If odd
+        if j & 0x1:
             b = a @ b
             b = b % m
-        a = np.linalg.matrix_power(a, 2)
+        a = a @ a
         a = a % m
-        j = int(j / 2)
+        j = j // 2
     return b
 
 
