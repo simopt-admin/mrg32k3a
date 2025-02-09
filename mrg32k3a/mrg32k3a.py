@@ -18,16 +18,17 @@ import numpy as np
 # ``An Objected-Oriented Random-Number Package with Many Long Streams and Substreams'',
 # Operations Research, 50, 6 (2002), 1073--1075.
 
-mrgnorm = 2.328306549295727688e-10  # 1.0 / 2**32
+# Page 162, Table II
+# J = 2, K = 3
 mrgm1 = 4294967087  # 2**32 - 209
-mrgm2 = 4294944443  # 2**32 - 209*3*7*11
+mrgm2 = 4294944443  # 2**32 - 22853
 mrga12 = 1403580  # 209*67
-mrga13n = 810728  # 209*19*17
+mrga13n = -810728  # 209*19*17
 mrga21 = 527612  # 209*73
-mrga23n = 1370589  # 209*19*67
+mrga23n = -1370589  # 209*19*67
 
-A1p0 = np.array([[0, 1, 0], [0, 0, 1], [-mrga13n, mrga12, 0]], dtype=np.object_)
-A2p0 = np.array([[0, 1, 0], [0, 0, 1], [-mrga23n, 0, mrga21]], dtype=np.object_)
+A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga13n, mrga12, 0]], dtype=np.object_)
+A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga23n, 0, mrga21]], dtype=np.object_)
 
 # Constants used in Beasley-Springer-Moro algorithm for approximating
 # the inverse cdf of the standard normal distribution.
@@ -50,7 +51,8 @@ bsmc = np.array(
         0.0000321767881768,
         0.0000002888167364,
         0.0000003960315187,
-    ]
+    ],
+    dtype=np.float64,
 )
 
 
@@ -80,8 +82,8 @@ def mrg32k3a(
 
     n = 3  # Next index to update (matches the source paper name)
     # Update state.
-    x1[n] = (mrga12 * x1[n - 2] - mrga13n * x1[n - 3]) % mrgm1
-    x2[n] = (mrga21 * x2[n - 1] - mrga23n * x2[n - 3]) % mrgm2
+    x1[n] = (mrga12 * x1[n - 2] + mrga13n * x1[n - 3]) % mrgm1
+    x2[n] = (mrga21 * x2[n - 1] + mrga23n * x2[n - 3]) % mrgm2
 
     # Calculate uniform random variate.
     z = (x1[n] - x2[n]) % mrgm1
@@ -122,9 +124,9 @@ def bsm(u: float) -> float:
     if abs(y) < 0.42:
         # Approximate from the center (Beasly-Springer 1977).
         r = pow(y, 2)
-        r2 = pow(r, 2)
-        r3 = pow(r, 3)
-        r4 = pow(r, 4)
+        r2 = r * r
+        r3 = r2 * r
+        r4 = r3 * r
         # DO NOT USE SUM HERE
         # Starting with Python 3.12, the sum() function has been modified to
         # use a more accurate algorithm for computing the sum of floating-point
@@ -142,13 +144,13 @@ def bsm(u: float) -> float:
             signum = 1
             r = 1 - u
         s = log(-log(r))
-        s0 = pow(s, 2)
-        s1 = pow(s, 3)
-        s2 = pow(s, 4)
-        s3 = pow(s, 5)
-        s4 = pow(s, 6)
-        s5 = pow(s, 7)
-        s6 = pow(s, 8)
+        s0 = s * s
+        s1 = s0 * s
+        s2 = s1 * s
+        s3 = s2 * s
+        s4 = s3 * s
+        s5 = s4 * s
+        s6 = s5 * s
         # DO NOT USE SUM HERE
         # Starting with Python 3.12, the sum() function has been modified to
         # use a more accurate algorithm for computing the sum of floating-point

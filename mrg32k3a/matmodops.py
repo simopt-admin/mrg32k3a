@@ -99,7 +99,7 @@ def mat33_mod(a: list[list[int]], m: float) -> list[list[int]]:
     r3 = range(3)
     for i in r3:
         for j in r3:
-            res[i][j] = int(a[i][j] % m)
+            res[i][j] = (a[i][j] % m) // 1
     return res
 
 
@@ -157,6 +157,6 @@ def mat33_power_mod(
         if j % 2 == 1:
             b = mat33_mat33_mod(a, b, m)
         a = mat33_mat33_mod(a, a, m)
-        j = int(j / 2)
+        j = j // 2
     res = b
     return res
