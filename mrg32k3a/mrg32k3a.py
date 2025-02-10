@@ -306,7 +306,7 @@ class MRG32k3a(random.Random):
             assert len(state) == 2, "State must be a 2-tuple."
             assert isinstance(state[0], tuple), "Seed must be a 6-tuple of integers."
             assert len(state[0]) == 6, "Seed must be a 6-tuple of integers."
-            assert all(isinstance(x, int) for x in state[0]), (
+            assert all(isinstance(x, (int, np.integer)) for x in state[0]), (
                 "Seed must be a 6-tuple of integers."
             )
         except AssertionError as e:
