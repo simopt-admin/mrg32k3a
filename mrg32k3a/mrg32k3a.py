@@ -21,12 +21,12 @@ import numpy as np
 
 # Page 162, Table II
 # J = 2, K = 3
-mrgm1 = np.int64(4294967087)
-mrgm2 = np.int64(4294944443)
-mrga12 = np.int64(1403580)
-mrga13n = np.int64(-810728)
-mrga21 = np.int64(527612)
-mrga23n = np.int64(-1370589)
+mrgm1 = 4294967087
+mrgm2 = 4294944443
+mrga12 = 1403580
+mrga13n = -810728
+mrga21 = 527612
+mrga23n = -1370589
 
 A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga13n, mrga12, 0]], dtype=np.int64)
 A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga23n, 0, mrga21]], dtype=np.int64)
@@ -113,40 +113,16 @@ def bsm(u: float) -> float:
     y = u - 0.5
     if abs(y) < 0.42:
         # Approximate from the center (Beasly-Springer 1977).
-        r = pow(y, 2)
-        r2 = r * r
-        r3 = r2 * r
-        r4 = r3 * r
-        asum = np.sum(bsma[0], bsma[1] * r, bsma[2] * r2, bsma[3] * r3)
-        bsum = np.sum(1, bsmb[0] * r, bsmb[1] * r2, bsmb[2] * r3, bsmb[3] * r4)
+        r = y * y
+        asum = np.polyval(bsma[::-1], r)
+        bsum = np.polyval([1] + bsmb[::-1].tolist(), r)
         z = y * (asum / bsum)
     else:
         # Approximate from the tails (Moro 1995).
-        if y < 0.0:
-            signum = -1
-            r = u
-        else:
-            signum = 1
-            r = 1 - u
+        signum = -1 if y < 0 else 1
+        r = u if y < 0 else 1 - u
         s = log(-log(r))
-        s0 = s * s
-        s1 = s0 * s
-        s2 = s1 * s
-        s3 = s2 * s
-        s4 = s3 * s
-        s5 = s4 * s
-        s6 = s5 * s
-        t = np.sum(
-            bsmc[0],
-            bsmc[1] * s,
-            bsmc[2] * s0,
-            bsmc[3] * s1,
-            bsmc[4] * s2,
-            bsmc[5] * s3,
-            bsmc[6] * s4,
-            bsmc[7] * s5,
-            bsmc[8] * s6,
-        )
+        t = np.polyval(bsmc[::-1], s)
         z = signum * t
     return z
 
@@ -177,10 +153,8 @@ def power_mod(a: np.ndarray, j: int, m: np.int64) -> np.ndarray:
     while j > 0:
         # If odd
         if j & 0x1:
-            b = a @ b
-            b = b % m
-        a = a @ a
-        a = a % m
+            b = np.remainder(a @ b, m)
+        a = np.remainder(a @ a, m)
         j = j // 2
     return b
 
@@ -619,7 +593,7 @@ class MRG32k3a(random.Random):
         nst1 = (A1p141 @ st1) % mrgm1
         nst2 = (A2p141 @ st2) % mrgm2
         # Combine the 2 components into a single state.
-        nstate = tuple(np.concatenate((nst1, nst2)))
+        nstate = tuple(np.hstack((nst1, nst2)))
         self.seed(nstate)
         # Increment the stream index.
         self.s_ss_sss_index[0] += 1
@@ -644,7 +618,7 @@ class MRG32k3a(random.Random):
         nst1 = (A1p94 @ st1) % mrgm1
         nst2 = (A2p94 @ st2) % mrgm2
         # Combine the 2 components into a single state.
-        nstate = tuple(np.concatenate((nst1, nst2)))
+        nstate = tuple(np.hstack((nst1, nst2)))
         self.seed(nstate)
         # Increment the substream index.
         self.s_ss_sss_index[1] += 1
@@ -667,7 +641,7 @@ class MRG32k3a(random.Random):
         nst1 = (A1p47 @ st1) % mrgm1
         nst2 = (A2p47 @ st2) % mrgm2
         # Combine the 2 components into a single state.
-        nstate = tuple(np.concatenate((nst1, nst2)))
+        nstate = tuple(np.hstack((nst1, nst2)))
         self.seed(nstate)
         # Increment the subsubstream index.
         self.s_ss_sss_index[2] += 1
@@ -720,7 +694,7 @@ class MRG32k3a(random.Random):
         nst2m = power_mod_2 @ st2
         st1 = nst1m % mrgm1
         st2 = nst2m % mrgm2
-        self.stream_start = tuple(np.concatenate((st1, st2)))
+        self.stream_start = tuple(np.hstack((st1, st2)))
         # Advance to start of specified substream.
         # Efficiently advance state -> A*s % m for both state parts.
         power_mod_1 = power_mod(A1p94, s_ss_sss_triplet[1], mrgm1)
@@ -729,7 +703,7 @@ class MRG32k3a(random.Random):
         nst2m = power_mod_2 @ st2
         st1 = nst1m % mrgm1
         st2 = nst2m % mrgm2
-        self.substream_start = tuple(np.concatenate((st1, st2)))
+        self.substream_start = tuple(np.hstack((st1, st2)))
         # Advance to start of specified subsubstream.
         # Efficiently advance state -> A*s % m for both state parts.
         power_mod_1 = power_mod(A1p47, s_ss_sss_triplet[2], mrgm1)
@@ -738,7 +712,7 @@ class MRG32k3a(random.Random):
         nst2m = power_mod_2 @ st2
         st1 = nst1m % mrgm1
         st2 = nst2m % mrgm2
-        self.subsubstream_start = tuple(np.concatenate((st1, st2)))
+        self.subsubstream_start = tuple(np.hstack((st1, st2)))
         nstate = self.subsubstream_start
         self.seed(nstate)
         # Update index referencing.
