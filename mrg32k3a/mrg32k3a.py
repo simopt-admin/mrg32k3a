@@ -76,23 +76,26 @@ def mrg32k3a(
         Pseudo uniform random variate.
 
     """
-    # Create two double ended queues for the two states
-    x1 = deque(state[:3], maxlen=3)
-    x2 = deque(state[3:], maxlen=3)
-
-    # Append new values to the deques.
-    # This automatically pops the oldest value out of the deque
-    x1.append((mrga12 * x1[1] + mrga13n * x1[0]) % mrgm1)
-    x2.append((mrga21 * x2[2] + mrga23n * x2[0]) % mrgm2)
+    # Create the new state
+    assert len(state) == 6, "State must be a 6-tuple."
+    new_state = (
+        state[1],
+        state[2],
+        (mrga12 * state[1] + mrga13n * state[0]) % mrgm1,
+        state[4],
+        state[5],
+        (mrga21 * state[5] + mrga23n * state[3]) % mrgm2,
+    )
 
     # Calculate uniform random variate.
-    z = (x1[-1] - x2[-1]) % mrgm1 if x1[-1] != x2[-1] else mrgm1
-    u = z / (mrgm1 + 1)
-
-    # Create new state.
-    new_state = tuple(x1) + tuple(x2)
-    assert len(new_state) == 6
-    # Return new state and uniform random variate.
+    diff = new_state[2] - new_state[5]
+    if diff != 0:
+        z = diff % mrgm1
+        u = z / (mrgm1 + 1)
+    else:
+        # TODO: Conver this to a constant
+        # It doesn't seem to occur often, so don't worry about it for now.
+        u = mrgm1 / (mrgm1 + 1)
     return new_state, u
 
 
