@@ -61,13 +61,6 @@ class TestMRG32k3a(unittest.TestCase):
         ]
         self.assertSequenceEqual(rng._current_state, expected_state)
 
-    def test_millionth_state(self):
-        rng = mrg.MRG32k3a()
-        for _ in range(1000000):
-            rng.random()
-        # assert true
-        self.assertTrue(True)
-
     def test_advance_stream(self):
         rng = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 1])
         rng.advance_stream()
