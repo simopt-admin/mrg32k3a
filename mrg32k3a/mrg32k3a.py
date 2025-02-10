@@ -325,8 +325,7 @@ class MRG32k3a(random.Random):
 
         """
         state = self._current_state
-        new_state, u = self.generate(state)
-        self.seed(new_state)
+        self._current_state, u = self.generate(state)
         return u
 
     def get_current_state(self) -> tuple[int, int, int, int, int, int]:
