@@ -3,7 +3,6 @@
 import os
 import sys
 import unittest
-import numpy as np
 
 import mrg32k3a.mrg32k3a as mrg
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 import random
 from copy import deepcopy
 from math import ceil, exp, log, sqrt
-from collections import deque
 
 import numpy as np
 
@@ -118,7 +117,7 @@ def bsm(u: float) -> float:
         # Approximate from the center (Beasly-Springer 1977).
         r = y * y
         asum = np.polyval(bsma[::-1], r)
-        bsum = np.polyval([1] + bsmb[::-1].tolist(), r)
+        bsum = np.polyval([1, *bsmb[::-1].tolist()], r)
         z = y * (asum / bsum)
     else:
         # Approximate from the tails (Moro 1995).
@@ -307,11 +306,11 @@ class MRG32k3a(random.Random):
             assert len(state) == 2, "State must be a 2-tuple."
             assert isinstance(state[0], tuple), "Seed must be a 6-tuple of integers."
             assert len(state[0]) == 6, "Seed must be a 6-tuple of integers."
-            assert all(
-                isinstance(x, int) for x in state[0]
-            ), "Seed must be a 6-tuple of integers."
+            assert all(isinstance(x, int) for x in state[0]), (
+                "Seed must be a 6-tuple of integers."
+            )
         except AssertionError as e:
-            raise ValueError(e)
+            raise ValueError(e) from e
         self.seed(state[0])
         super().setstate(state[1])
 
