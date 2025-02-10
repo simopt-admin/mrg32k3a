@@ -8,6 +8,7 @@ from __future__ import annotations
 import random
 from copy import deepcopy
 from math import ceil, exp, log, sqrt
+from collections import deque
 
 import numpy as np
 
@@ -75,32 +76,21 @@ def mrg32k3a(
         Pseudo uniform random variate.
 
     """
-    # Split state into two 3-tuples.
-    # The 4th element is a placeholder for the next value.
-    x1 = np.array([state[0], state[1], state[2], 0], dtype=np.int64)
-    x2 = np.array([state[3], state[4], state[5], 0], dtype=np.int64)
+    # Create two double ended queues for the two states
+    x1 = deque(state[:3], maxlen=3)
+    x2 = deque(state[3:], maxlen=3)
 
-    n = 3  # Next index to update (matches the source paper name)
-    # Update state.
-    x1[n] = (mrga12 * x1[n - 2] + mrga13n * x1[n - 3]) % mrgm1
-    x2[n] = (mrga21 * x2[n - 1] + mrga23n * x2[n - 3]) % mrgm2
+    # Append new values to the deques.
+    # This automatically pops the oldest value out of the deque
+    x1.append((mrga12 * x1[1] + mrga13n * x1[0]) % mrgm1)
+    x2.append((mrga21 * x2[2] + mrga23n * x2[0]) % mrgm2)
 
     # Calculate uniform random variate.
-    z = (x1[n] - x2[n]) % mrgm1
-    if z > 0:
-        u = z / (mrgm1 + 1)
-    elif z == 0:
-        u = mrgm1 / (mrgm1 + 1)
-    else:
-        # This should never happen.
-        raise ValueError("Invalid value for z.")
+    z = (x1[-1] - x2[-1]) % mrgm1 if x1[-1] != x2[-1] else mrgm1
+    u = z / (mrgm1 + 1)
 
-    # Get rid of the first element in both lists.
-    # This advances N by 1.
-    x1 = x1[1:]
-    x2 = x2[1:]
     # Create new state.
-    new_state = tuple(np.concatenate((x1, x2)))
+    new_state = tuple(x1) + tuple(x2)
     assert len(new_state) == 6
     # Return new state and uniform random variate.
     return new_state, u
@@ -127,11 +117,6 @@ def bsm(u: float) -> float:
         r2 = r * r
         r3 = r2 * r
         r4 = r3 * r
-        # DO NOT USE SUM HERE
-        # Starting with Python 3.12, the sum() function has been modified to
-        # use a more accurate algorithm for computing the sum of floating-point
-        # numbers. While theoretically more accurate, this change can lead to
-        # different results between Python 3.11- and Python 3.12+.
         asum = np.sum(bsma[0], bsma[1] * r, bsma[2] * r2, bsma[3] * r3)
         bsum = np.sum(1, bsmb[0] * r, bsmb[1] * r2, bsmb[2] * r3, bsmb[3] * r4)
         z = y * (asum / bsum)
@@ -151,12 +136,17 @@ def bsm(u: float) -> float:
         s4 = s3 * s
         s5 = s4 * s
         s6 = s5 * s
-        # DO NOT USE SUM HERE
-        # Starting with Python 3.12, the sum() function has been modified to
-        # use a more accurate algorithm for computing the sum of floating-point
-        # numbers. While theoretically more accurate, this change can lead to
-        # different results between Python 3.11- and Python 3.12+.
-        t = np.sum(bsmc[0], bsmc[1] * s, bsmc[2] * s0, bsmc[3] * s1, bsmc[4] * s2, bsmc[5] * s3, bsmc[6] * s4, bsmc[7] * s5, bsmc[8] * s6)
+        t = np.sum(
+            bsmc[0],
+            bsmc[1] * s,
+            bsmc[2] * s0,
+            bsmc[3] * s1,
+            bsmc[4] * s2,
+            bsmc[5] * s3,
+            bsmc[6] * s4,
+            bsmc[7] * s5,
+            bsmc[8] * s6,
+        )
         z = signum * t
     return z
 

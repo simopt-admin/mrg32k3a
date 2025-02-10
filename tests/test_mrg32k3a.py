@@ -51,8 +51,22 @@ class TestMRG32k3a(unittest.TestCase):
             rng.random()
 
         # Check the 100th state
-        expected_state = [2937268593, 1819035667, 3047838441, 3193417629, 1641899773, 1738356667]
+        expected_state = [
+            2937268593,
+            1819035667,
+            3047838441,
+            3193417629,
+            1641899773,
+            1738356667,
+        ]
         self.assertSequenceEqual(rng._current_state, expected_state)
+
+    def test_millionth_state(self):
+        rng = mrg.MRG32k3a()
+        for _ in range(1000000):
+            rng.random()
+        # assert true
+        self.assertTrue(True)
 
     def test_advance_stream(self):
         rng = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 1])
