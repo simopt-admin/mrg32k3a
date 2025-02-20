@@ -151,7 +151,7 @@ class TestMRG32k3a(unittest.TestCase):
         self.assertEqual(rng.subsubstream_start, rng2.subsubstream_start)
         self.assertEqual(rng.s_ss_sss_index, rng2.s_ss_sss_index)
 
-    def test_bsm(self):
+    def test_bsm_ab(self):
         result_low = mrg.bsm(0.1)
         self.assertAlmostEqual(result_low, np.float64(-1.2815515632770351))
         result_high = mrg.bsm(0.9)
@@ -178,6 +178,19 @@ class TestMRG32k3a(unittest.TestCase):
 
         result = mrg.bsm(0.5)
         self.assertEqual(result, np.float64(0.0))
+
+    def test_bsm_c(self):
+        result = mrg.bsm(0.92)
+        self.assertAlmostEqual(result, np.float64(1.4050715603096322))
+
+        result = mrg.bsm(0.94)
+        self.assertAlmostEqual(result, np.float64(1.5547735946074814))
+
+        result = mrg.bsm(0.96)
+        self.assertAlmostEqual(result, np.float64(1.7506860713064076))
+
+        result = mrg.bsm(0.98)
+        self.assertAlmostEqual(result, np.float64(2.0537489105686255))
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from copy import deepcopy
 from math import ceil, exp, log, sqrt
 
 import numpy as np
+from numpy.polynomial.polynomial import polyval
 
 # Constants used in mrg32k3a and in substream generation.
 # P. L'Ecuyer, ``Good Parameter Sets for Combined Multiple Recursive Random Number Generators'',
@@ -118,15 +119,15 @@ def bsm(u: float) -> float:
     if abs(y) < 0.42:
         # Approximate from the center (Beasly-Springer 1977).
         r = y * y
-        asum = np.polyval(bsma[::-1], r)
-        bsum = np.polyval(bsmb[::-1], r)
+        asum = polyval(r, bsma)
+        bsum = polyval(r, bsmb)
         z = y * (asum / bsum)
     else:
         # Approximate from the tails (Moro 1995).
         signum = -1 if y < 0 else 1
         r = u if y < 0 else 1 - u
         s = log(-log(r))
-        t = np.polyval(bsmc[::-1], s)
+        t = polyval(s, bsmc)
         z = signum * t
     return z
 
