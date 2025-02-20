@@ -26,11 +26,11 @@ sys.path.insert(0, os.path.abspath("../src"))
 # -- Project information -----------------------------------------------------
 
 project = "mrg32k3a"
-copyright = "2022, David Eckman, Shane Henderson, and Sara Shashaani"
+copyright = "2025, David Eckman, Shane Henderson, and Sara Shashaani"
 author = "David Eckman, Shane Henderson, and Sara Shashaani"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.1"
+release = "1.1.0"
 
 
 # -- General configuration ---------------------------------------------------
