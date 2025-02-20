@@ -158,8 +158,8 @@ def power_mod(a: np.ndarray, j: int, m: np.int64) -> np.ndarray:
     while j > 0:
         # If odd
         if j & 0x1:
-            b = np.remainder(a @ b, m)
-        a = np.remainder(a @ a, m)
+            b = (a @ b) % m
+        a = (a @ a) % m
         j = j // 2
     return b
 
