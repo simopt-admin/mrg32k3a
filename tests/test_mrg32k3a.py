@@ -4,6 +4,8 @@ import os
 import sys
 import unittest
 
+import numpy as np
+
 import mrg32k3a.mrg32k3a as mrg
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -148,6 +150,34 @@ class TestMRG32k3a(unittest.TestCase):
         self.assertEqual(rng.substream_start, rng2.substream_start)
         self.assertEqual(rng.subsubstream_start, rng2.subsubstream_start)
         self.assertEqual(rng.s_ss_sss_index, rng2.s_ss_sss_index)
+
+    def test_bsm(self):
+        result_low = mrg.bsm(0.1)
+        self.assertAlmostEqual(result_low, np.float64(-1.2815515632770351))
+        result_high = mrg.bsm(0.9)
+        self.assertAlmostEqual(result_high, np.float64(1.2815515632770351))
+        self.assertAlmostEqual(result_low, -result_high)
+
+        result_low = mrg.bsm(0.2)
+        self.assertAlmostEqual(result_low, np.float64(-0.8416212348979941))
+        result_high = mrg.bsm(0.8)
+        self.assertAlmostEqual(result_high, np.float64(0.8416212348979941))
+        self.assertAlmostEqual(result_low, -result_high)
+
+        result_low = mrg.bsm(0.3)
+        self.assertAlmostEqual(result_low, np.float64(-0.5244005119066527))
+        result_high = mrg.bsm(0.7)
+        self.assertAlmostEqual(result_high, np.float64(0.5244005119066527))
+        self.assertAlmostEqual(result_low, -result_high)
+
+        result_low = mrg.bsm(0.4)
+        self.assertAlmostEqual(result_low, np.float64(-0.2533471033214436))
+        result_high = mrg.bsm(0.6)
+        self.assertAlmostEqual(result_high, np.float64(0.2533471033214436))
+        self.assertAlmostEqual(result_low, -result_high)
+
+        result = mrg.bsm(0.5)
+        self.assertEqual(result, np.float64(0.0))
 
 
 if __name__ == "__main__":

@@ -37,7 +37,7 @@ bsma = np.array(
     dtype=np.float64,
 )
 bsmb = np.array(
-    [-8.47351093090, 23.08336743743, -21.06224101826, 3.13082909833],
+    [1, -8.47351093090, 23.08336743743, -21.06224101826, 3.13082909833],
     dtype=np.float64,
 )
 bsmc = np.array(
@@ -112,12 +112,14 @@ def bsm(u: float) -> float:
         Corresponding quantile of the standard normal distribution.
 
     """
+    if u <= 0 or u >= 1:
+        raise ValueError("Argument must be in (0, 1).")
     y = u - 0.5
     if abs(y) < 0.42:
         # Approximate from the center (Beasly-Springer 1977).
         r = y * y
         asum = np.polyval(bsma[::-1], r)
-        bsum = np.polyval([1, *bsmb[::-1].tolist()], r)
+        bsum = np.polyval(bsmb[::-1], r)
         z = y * (asum / bsum)
     else:
         # Approximate from the tails (Moro 1995).
