@@ -10,6 +10,7 @@ from copy import deepcopy
 from math import ceil, exp, log, sqrt
 
 import numpy as np
+from numpy.linalg import matrix_power
 from numpy.polynomial.polynomial import polyval
 
 # Constants used in mrg32k3a and in substream generation.
@@ -22,24 +23,75 @@ from numpy.polynomial.polynomial import polyval
 # Page 162, Table II
 # J = 2, K = 3
 mrgm1 = 4294967087
+mrgm1_plus_1 = 4294967088  # mrgm1 + 1
+mrgm1_div_mrgm1_plus_1 = 0.999999999767169  # mrgm1 / (mrgm1 + 1)
 mrgm2 = 4294944443
 mrga12 = 1403580
 mrga13n = -810728
 mrga21 = 527612
 mrga23n = -1370589
 
-A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga13n, mrga12, 0]], dtype=np.int64)
-A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga23n, 0, mrga21]], dtype=np.int64)
+A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga13n, mrga12, 0]])
+A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga23n, 0, mrga21]])
+
+# These need to be object-types to avoid overflow errors
+# (Python's int type has arbitrary precision)
+A1p47 = np.array(
+    [
+        [2150882049, 1012615007, 1753411989],
+        [234971272, 3938477338, 966612171],
+        [3006247121, 3687673689, 940826602],
+    ],
+    dtype=object,
+)
+A2p47 = np.array(
+    [
+        [1046183310, 837768296, 3615496901],
+        [17393928, 3278539534, 2641844075],
+        [1993644961, 3704895436, 3750989706],
+    ],
+    dtype=object,
+)
+A1p94 = np.array(
+    [
+        [755664978, 569748550, 3548871349],
+        [1218252973, 522684588, 810477570],
+        [1389789784, 3146723777, 3218949703],
+    ],
+    dtype=object,
+)
+A2p94 = np.array(
+    [
+        [1562155877, 1430955988, 3645089813],
+        [3893748262, 3622354192, 1033072313],
+        [369450389, 3504376307, 2126264688],
+    ],
+    dtype=object,
+)
+A1p141 = np.array(
+    [
+        [766528512, 1921679764, 2446008495],
+        [2261886462, 1413988183, 1120803221],
+        [3269079875, 1181992446, 144371898],
+    ],
+    dtype=object,
+)
+A2p141 = np.array(
+    [
+        [2180513949, 1961145626, 3911964994],
+        [963935459, 2169350115, 2047463392],
+        [2520335674, 2435164196, 3566463752],
+    ],
+    dtype=object,
+)
 
 # Constants used in Beasley-Springer-Moro algorithm for approximating
 # the inverse cdf of the standard normal distribution.
 bsma = np.array(
     [2.50662823884, -18.61500062529, 41.39119773534, -25.44106049637],
-    dtype=np.float64,
 )
 bsmb = np.array(
     [1, -8.47351093090, 23.08336743743, -21.06224101826, 3.13082909833],
-    dtype=np.float64,
 )
 bsmc = np.array(
     [
@@ -53,7 +105,6 @@ bsmc = np.array(
         0.0000002888167364,
         0.0000003960315187,
     ],
-    dtype=np.float64,
 )
 
 
@@ -77,26 +128,17 @@ def mrg32k3a(
 
     """
     # Create the new state
-    assert len(state) == 6, "State must be a 6-tuple."
-    new_state = (
-        state[1],
-        state[2],
-        (mrga12 * state[1] + mrga13n * state[0]) % mrgm1,
-        state[4],
-        state[5],
-        (mrga21 * state[5] + mrga23n * state[3]) % mrgm2,
-    )
+    s0, s1, s2, s3, s4, s5 = state
+
+    # Compute new values for the state
+    new_s2 = (mrga12 * s1 + mrga13n * s0) % mrgm1
+    new_s5 = (mrga21 * s5 + mrga23n * s3) % mrgm2
 
     # Calculate uniform random variate.
-    diff = new_state[2] - new_state[5]
-    if diff != 0:
-        z = diff % mrgm1
-        u = z / (mrgm1 + 1)
-    else:
-        # TODO: Conver this to a constant
-        # It doesn't seem to occur often, so don't worry about it for now.
-        u = mrgm1 / (mrgm1 + 1)
-    return new_state, u
+    diff = new_s2 - new_s5
+    u = (diff % mrgm1) / mrgm1_plus_1 if diff != 0 else mrgm1_div_mrgm1_plus_1
+
+    return (s1, s2, new_s2, s4, s5, new_s5), u
 
 
 def bsm(u: float) -> float:
@@ -119,57 +161,12 @@ def bsm(u: float) -> float:
     if abs(y) < 0.42:
         # Approximate from the center (Beasly-Springer 1977).
         r = y * y
-        asum = polyval(r, bsma)
-        bsum = polyval(r, bsmb)
-        z = y * (asum / bsum)
+        return y * (polyval(r, bsma) / polyval(r, bsmb))
     else:
         # Approximate from the tails (Moro 1995).
         signum = -1 if y < 0 else 1
         r = u if y < 0 else 1 - u
-        s = log(-log(r))
-        t = polyval(s, bsmc)
-        z = signum * t
-    return z
-
-
-def power_mod(a: np.ndarray, j: int, m: np.int64) -> np.ndarray:
-    """Compute moduli of a 3 x 3 matrix power.
-
-    Use divide-and-conquer algorithm described in L'Ecuyer (1990).
-
-    Parameters
-    ----------
-    a : np.ndarray
-        3 x 3 matrix.
-    j : int
-        Exponent.
-    m : np.int64
-        Modulus.
-
-    Returns
-    -------
-    np.ndarray
-        3 x 3 matrix.
-
-    """
-    # Initialize B
-    b = np.eye(3, dtype=np.int64)
-
-    while j > 0:
-        # If odd
-        if j & 0x1:
-            b = (a @ b) % m
-        a = (a @ a) % m
-        j = j // 2
-    return b
-
-
-A1p47 = power_mod(A1p0, 2**47, mrgm1)
-A2p47 = power_mod(A2p0, 2**47, mrgm2)
-A1p94 = power_mod(A1p0, 2**94, mrgm1)
-A2p94 = power_mod(A2p0, 2**94, mrgm2)
-A1p141 = power_mod(A1p0, 2**141, mrgm1)
-A2p141 = power_mod(A2p0, 2**141, mrgm2)
+        return signum * polyval(log(-log(r)), bsmc)
 
 
 class MRG32k3a(random.Random):
@@ -219,8 +216,6 @@ class MRG32k3a(random.Random):
             Triplet of the indices of the stream-substream-subsubstream to start at.
 
         """
-        if not len(ref_seed) == 6:
-            raise ValueError("Seed must be a 6-tuple.")
         self.version = 2
         self.generate = mrg32k3a
         self.ref_seed = ref_seed
@@ -260,8 +255,6 @@ class MRG32k3a(random.Random):
             New state to which to advance the generator.
 
         """
-        if not len(new_state) == 6:
-            raise ValueError("Seed must be a 6-tuple.")
         self._current_state = new_state
         # super().seed(new_state)
 
@@ -304,16 +297,6 @@ class MRG32k3a(random.Random):
         random.Random
 
         """
-        try:
-            assert isinstance(state, tuple), "State must be a 2-tuple."
-            assert len(state) == 2, "State must be a 2-tuple."
-            assert isinstance(state[0], tuple), "Seed must be a 6-tuple of integers."
-            assert len(state[0]) == 6, "Seed must be a 6-tuple of integers."
-            assert all(isinstance(x, (int, np.integer)) for x in state[0]), (
-                "Seed must be a 6-tuple of integers."
-            )
-        except AssertionError as e:
-            raise ValueError(e) from e
         self.seed(state[0])
         super().setstate(state[1])
 
@@ -326,9 +309,8 @@ class MRG32k3a(random.Random):
             Pseudo uniform random variate.
 
         """
-        state = self._current_state
-        self._current_state, u = self.generate(state)
-        return u
+        self._current_state, u = self.generate(self._current_state)
+        return float(u)
 
     def get_current_state(self) -> tuple[int, int, int, int, int, int]:
         """Return the current state of the generator.
@@ -359,9 +341,7 @@ class MRG32k3a(random.Random):
             A normal random variate from the specified distribution.
 
         """
-        u = self.random()
-        z = bsm(u)
-        return mu + sigma * z
+        return mu + sigma * bsm(self.random())
 
     def lognormalvariate(self, lq: float, uq: float) -> float:
         """Generate a Lognormal random variate using 2.5% and 97.5% quantiles.
@@ -382,9 +362,7 @@ class MRG32k3a(random.Random):
 
         """
         mu = (log(lq) + log(uq)) / 2
-        sigma = (log(uq) - mu) / 1.96
-        x = self.normalvariate(mu, sigma)
-        return exp(x)
+        return exp(self.normalvariate(mu, (log(uq) - mu) / 1.96))
 
     def mvnormalvariate(
         self,
@@ -414,10 +392,7 @@ class MRG32k3a(random.Random):
 
         """
         n_cols = len(cov)
-        if not factorized:
-            chol = np.linalg.cholesky(cov)
-        else:
-            chol = cov
+        chol = np.linalg.cholesky(cov) if not factorized else cov
         observations = [self.normalvariate(0, 1) for _ in range(n_cols)]
         return chol.dot(observations).transpose() + mean_vec
 
@@ -674,8 +649,7 @@ class MRG32k3a(random.Random):
 
     def reset_subsubstream(self) -> None:
         """Reset the state of the generator to the start of the current subsubstream."""
-        nstate = self.subsubstream_start
-        self.seed(nstate)
+        self.seed(self.subsubstream_start)
 
     def start_fixed_s_ss_sss(self, s_ss_sss_triplet: list[int]) -> None:
         """Set the rng to the start of a specified (stream, substream, subsubstream) triplet.
@@ -686,38 +660,34 @@ class MRG32k3a(random.Random):
             Triplet of the indices of the current stream-substream-subsubstream.
 
         """
+        # Grab the stream, substream, and subsubstream indices.
+        stream, substream, subsubstream = s_ss_sss_triplet
+        # Start from the reference seed.
         state = self.ref_seed
         # Split the reference seed into 2 components of length 3.
         st1 = np.array(state[0:3])
         st2 = np.array(state[3:6])
         # Advance to start of specified stream.
         # Efficiently advance state -> A*s % m for both state parts.
-        power_mod_1 = power_mod(A1p141, s_ss_sss_triplet[0], mrgm1)
-        power_mod_2 = power_mod(A2p141, s_ss_sss_triplet[0], mrgm2)
-        nst1m = power_mod_1 @ st1
-        nst2m = power_mod_2 @ st2
-        st1 = nst1m % mrgm1
-        st2 = nst2m % mrgm2
+        power_mod_1 = matrix_power(A1p141, stream) % mrgm1
+        power_mod_2 = matrix_power(A2p141, stream) % mrgm2
+        st1 = (power_mod_1 @ st1) % mrgm1
+        st2 = (power_mod_2 @ st2) % mrgm2
         self.stream_start = tuple(np.hstack((st1, st2)))
         # Advance to start of specified substream.
         # Efficiently advance state -> A*s % m for both state parts.
-        power_mod_1 = power_mod(A1p94, s_ss_sss_triplet[1], mrgm1)
-        power_mod_2 = power_mod(A2p94, s_ss_sss_triplet[1], mrgm2)
-        nst1m = power_mod_1 @ st1
-        nst2m = power_mod_2 @ st2
-        st1 = nst1m % mrgm1
-        st2 = nst2m % mrgm2
+        power_mod_1 = matrix_power(A1p94, substream) % mrgm1
+        power_mod_2 = matrix_power(A2p94, substream) % mrgm2
+        st1 = (power_mod_1 @ st1) % mrgm1
+        st2 = (power_mod_2 @ st2) % mrgm2
         self.substream_start = tuple(np.hstack((st1, st2)))
         # Advance to start of specified subsubstream.
         # Efficiently advance state -> A*s % m for both state parts.
-        power_mod_1 = power_mod(A1p47, s_ss_sss_triplet[2], mrgm1)
-        power_mod_2 = power_mod(A2p47, s_ss_sss_triplet[2], mrgm2)
-        nst1m = power_mod_1 @ st1
-        nst2m = power_mod_2 @ st2
-        st1 = nst1m % mrgm1
-        st2 = nst2m % mrgm2
+        power_mod_1 = matrix_power(A1p47, subsubstream) % mrgm1
+        power_mod_2 = matrix_power(A2p47, subsubstream) % mrgm2
+        st1 = (power_mod_1 @ st1) % mrgm1
+        st2 = (power_mod_2 @ st2) % mrgm2
         self.subsubstream_start = tuple(np.hstack((st1, st2)))
-        nstate = self.subsubstream_start
-        self.seed(nstate)
+        self.seed(self.subsubstream_start)
         # Update index referencing.
         self.s_ss_sss_index = s_ss_sss_triplet

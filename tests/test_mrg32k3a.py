@@ -73,6 +73,9 @@ class TestRandom(unittest.TestCase):
 
 
 class TestStates(unittest.TestCase):
+    A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrg.mrga13n, mrg.mrga12, 0]])
+    A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrg.mrga23n, 0, mrg.mrga21]])
+
     def test_get_current_state(self):
         rng = mrg.MRG32k3a()
         self.assertEqual(rng.get_current_state(), seed)
@@ -84,9 +87,9 @@ class TestStates(unittest.TestCase):
     def test_second_state(self):
         rng = mrg.MRG32k3a()
         rng.random()
-        st1_mult = mrg.A1p0 @ seed[0:3]
+        st1_mult = self.A1p0 @ seed[0:3]
         st1 = st1_mult % mrg.mrgm1
-        st2_mult = mrg.A2p0 @ seed[3:6]
+        st2_mult = self.A2p0 @ seed[3:6]
         st2 = st2_mult % mrg.mrgm2
         state = st1.tolist() + st2.tolist()
         self.assertSequenceEqual(rng._current_state, state)
@@ -95,8 +98,8 @@ class TestStates(unittest.TestCase):
         rng = mrg.MRG32k3a()
         rng.random()
         rng.random()
-        A1sq = mrg.A1p0 @ mrg.A1p0
-        A2sq = mrg.A2p0 @ mrg.A2p0
+        A1sq = self.A1p0 @ self.A1p0
+        A2sq = self.A2p0 @ self.A2p0
         st1_mult = A1sq @ seed[0:3]
         st1 = st1_mult % mrg.mrgm1
         st2_mult = A2sq @ seed[3:6]
@@ -123,7 +126,7 @@ class TestStates(unittest.TestCase):
 
 
 class TestStreams(unittest.TestCase):
-    def test_advance_stream(self):
+    def test_advance_stream_1(self):
         rng = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 1])
         rng.advance_stream()
         rng2 = mrg.MRG32k3a(s_ss_sss_index=[1, 0, 0])
@@ -133,7 +136,18 @@ class TestStreams(unittest.TestCase):
         self.assertEqual(rng.subsubstream_start, rng._current_state)
         self.assertEqual(rng.s_ss_sss_index, [1, 0, 0])
 
-    def test_advance_substream(self):
+    def test_advance_stream_10(self):
+        rng = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 1])
+        for _ in range(10):
+            rng.advance_stream()
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=[10, 0, 0])
+        self.assertEqual(rng._current_state, rng2._current_state)
+        self.assertEqual(rng.stream_start, rng._current_state)
+        self.assertEqual(rng.substream_start, rng._current_state)
+        self.assertEqual(rng.subsubstream_start, rng._current_state)
+        self.assertEqual(rng.s_ss_sss_index, [10, 0, 0])
+
+    def test_advance_substream_1(self):
         rng = mrg.MRG32k3a(s_ss_sss_index=[0, 0, 1])
         rng.advance_substream()
         rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 0])
@@ -143,7 +157,18 @@ class TestStreams(unittest.TestCase):
         self.assertEqual(rng.subsubstream_start, rng._current_state)
         self.assertEqual(rng.s_ss_sss_index, [0, 1, 0])
 
-    def test_advance_subsubstream(self):
+    def test_advance_substream_10(self):
+        rng = mrg.MRG32k3a(s_ss_sss_index=[0, 0, 1])
+        for _ in range(10):
+            rng.advance_substream()
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 10, 0])
+        self.assertEqual(rng._current_state, rng2._current_state)
+        self.assertEqual(rng.stream_start, seed)
+        self.assertEqual(rng.substream_start, rng._current_state)
+        self.assertEqual(rng.subsubstream_start, rng._current_state)
+        self.assertEqual(rng.s_ss_sss_index, [0, 10, 0])
+
+    def test_advance_subsubstream_1(self):
         rng = mrg.MRG32k3a()
         rng.advance_subsubstream()
         rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 0, 1])
@@ -152,6 +177,17 @@ class TestStreams(unittest.TestCase):
         self.assertEqual(rng.substream_start, seed)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
         self.assertEqual(rng.s_ss_sss_index, [0, 0, 1])
+
+    def test_advance_subsubstream_10(self):
+        rng = mrg.MRG32k3a()
+        for _ in range(10):
+            rng.advance_subsubstream()
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 0, 10])
+        self.assertEqual(rng._current_state, rng2._current_state)
+        self.assertEqual(rng.stream_start, seed)
+        self.assertEqual(rng.substream_start, seed)
+        self.assertEqual(rng.subsubstream_start, rng._current_state)
+        self.assertEqual(rng.s_ss_sss_index, [0, 0, 10])
 
     def test_reset_stream(self):
         rng = mrg.MRG32k3a(s_ss_sss_index=[1, 1, 1])
@@ -214,46 +250,47 @@ class TestStreams(unittest.TestCase):
 
 
 class TestBSM(unittest.TestCase):
-    def test_bsm_ab(self):
-        result_low = mrg.bsm(0.1)
-        self.assertAlmostEqual(result_low, np.float64(-1.2815515632770351))
-        result_high = mrg.bsm(0.9)
-        self.assertAlmostEqual(result_high, np.float64(1.2815515632770351))
-        self.assertAlmostEqual(result_low, -result_high)
-
-        result_low = mrg.bsm(0.2)
-        self.assertAlmostEqual(result_low, np.float64(-0.8416212348979941))
-        result_high = mrg.bsm(0.8)
-        self.assertAlmostEqual(result_high, np.float64(0.8416212348979941))
-        self.assertAlmostEqual(result_low, -result_high)
-
-        result_low = mrg.bsm(0.3)
-        self.assertAlmostEqual(result_low, np.float64(-0.5244005119066527))
-        result_high = mrg.bsm(0.7)
-        self.assertAlmostEqual(result_high, np.float64(0.5244005119066527))
-        self.assertAlmostEqual(result_low, -result_high)
-
-        result_low = mrg.bsm(0.4)
-        self.assertAlmostEqual(result_low, np.float64(-0.2533471033214436))
-        result_high = mrg.bsm(0.6)
-        self.assertAlmostEqual(result_high, np.float64(0.2533471033214436))
-        self.assertAlmostEqual(result_low, -result_high)
-
+    def test_bsm_ab_diff_00(self):
         result = mrg.bsm(0.5)
-        self.assertEqual(result, np.float64(0.0))
+        self.assertEqual(result, 0.0)
+
+    def test_bsm_ab_diff_01(self):
+        result_low = mrg.bsm(0.4)
+        result_high = mrg.bsm(0.6)
+        expected = 0.2533471033214436
+        self.assertAlmostEqual(result_low, -expected)
+        self.assertAlmostEqual(result_high, expected)
+        self.assertAlmostEqual(result_low, -result_high)
+
+    def test_bsm_ab_diff_02(self):
+        result_low = mrg.bsm(0.3)
+        result_high = mrg.bsm(0.7)
+        expected = 0.5244005119066527
+        self.assertAlmostEqual(result_low, -expected)
+        self.assertAlmostEqual(result_high, expected)
+        self.assertAlmostEqual(result_low, -result_high)
+
+    def test_bsm_ab_diff_03(self):
+        result_low = mrg.bsm(0.2)
+        result_high = mrg.bsm(0.8)
+        expected = 0.8416212348979941
+        self.assertAlmostEqual(result_low, -expected)
+        self.assertAlmostEqual(result_high, expected)
+        self.assertAlmostEqual(result_low, -result_high)
+
+    def test_bsm_ab_diff_04(self):
+        result_low = mrg.bsm(0.1)
+        result_high = mrg.bsm(0.9)
+        expected = 1.2815515632770351
+        self.assertAlmostEqual(result_low, -expected)
+        self.assertAlmostEqual(result_high, expected)
+        self.assertAlmostEqual(result_low, -result_high)
 
     def test_bsm_c(self):
-        result = mrg.bsm(0.92)
-        self.assertAlmostEqual(result, np.float64(1.4050715603096322))
-
-        result = mrg.bsm(0.94)
-        self.assertAlmostEqual(result, np.float64(1.5547735946074814))
-
-        result = mrg.bsm(0.96)
-        self.assertAlmostEqual(result, np.float64(1.7506860713064076))
-
-        result = mrg.bsm(0.98)
-        self.assertAlmostEqual(result, np.float64(2.0537489105686255))
+        self.assertAlmostEqual(mrg.bsm(0.92), 1.4050715603096322)
+        self.assertAlmostEqual(mrg.bsm(0.94), 1.5547735946074814)
+        self.assertAlmostEqual(mrg.bsm(0.96), 1.7506860713064076)
+        self.assertAlmostEqual(mrg.bsm(0.98), 2.0537489105686255)
 
 
 if __name__ == "__main__":
