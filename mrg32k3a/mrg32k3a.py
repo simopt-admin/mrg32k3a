@@ -362,8 +362,9 @@ class MRG32k3a(random.Random):
 
         """
         try:
-            mu = (log(lq) + log(uq)) / 2
-            return exp(self.normalvariate(mu, (log(uq) - mu) / 1.96))
+            log_uq = log(uq)
+            mu = (log(lq) + log_uq) / 2
+            return exp(self.normalvariate(mu, (log_uq - mu) / 1.96))
         except ValueError as e:
             if lq <= 0 or uq <= 0:
                 raise ValueError("Quantiles must be greater than 0.") from e
@@ -396,10 +397,9 @@ class MRG32k3a(random.Random):
             Multivariate normal random variate from the specified distribution.
 
         """
-        n_cols = len(cov)
         chol = np.linalg.cholesky(cov) if not factorized else cov
-        observations = [self.normalvariate(0, 1) for _ in range(n_cols)]
-        result = chol.dot(observations).transpose() + mean_vec
+        observations = [self.normalvariate(0, 1) for _ in range(len(cov))]
+        result = np.dot(chol, observations).transpose() + mean_vec
         return [float(x) for x in result]
 
     def poissonvariate(self, lmbda: float) -> int:
@@ -417,17 +417,14 @@ class MRG32k3a(random.Random):
             Poisson random variate from the specified distribution.
 
         """
-        if lmbda < 35:
-            n = 0
-            p = self.random()
-            threshold = exp(-lmbda)
-            while p >= threshold:
-                u = self.random()
-                p = p * u
-                n = n + 1
-        else:
-            z = self.normalvariate()
-            n = max(ceil(lmbda + sqrt(lmbda) * z - 0.5), 0)
+        if lmbda >= 35:
+            return max(ceil(lmbda + sqrt(lmbda) * self.normalvariate() - 0.5), 0)
+        n = 0
+        p = self.random()
+        threshold = exp(-lmbda)
+        while p >= threshold:
+            p *= self.random()
+            n += 1
         return n
 
     def gumbelvariate(self, mu: float, beta: float) -> float:
@@ -448,9 +445,7 @@ class MRG32k3a(random.Random):
             Gumbel random variate from the specified distribution.
 
         """
-        u = self.random()
-        q = mu - beta * np.log(-np.log(u))
-        return float(q)
+        return float(mu - beta * np.log(-np.log(self.random())))
 
     def binomialvariate(self, n: int, p: float) -> int:
         """Generate a Binomial(n, p) random variate.
@@ -468,8 +463,7 @@ class MRG32k3a(random.Random):
             Binomial random variate from the specified distribution.
 
         """
-        x = np.sum(self.choices(population=[0, 1], weights=[1 - p, p], k=n))
-        return int(x)
+        return int(np.sum(self.choices(population=[0, 1], weights=[1 - p, p], k=n)))
 
     def integer_random_vector_from_simplex(
         self, n_elements: int, summation: int, with_zero: bool = False
@@ -491,25 +485,22 @@ class MRG32k3a(random.Random):
             A non-negative integer vector of length n_elements that sum to n_elements.
 
         """
-        if with_zero is False:
-            if n_elements > summation:
-                error_msg = "The sum cannot be greater than the number of positive integers requested."
-                raise ValueError(error_msg)
-            # Generate a vector of length n_elements by sampling without replacement from
-            # the set {1, 2, 3, ..., n_elements-1}. Sort it in ascending order, pre-append
-            # "0", and post-append "summation".
-            temp_x = self.sample(population=range(1, summation), k=n_elements - 1)
-            temp_x.sort()
-            x = [0, *temp_x, summation]
-            # Take differences between consecutive terms. Result will sum to summation.
-            vec = [x[idx + 1] - x[idx] for idx in range(n_elements)]
-        else:
-            temp_vec = self.integer_random_vector_from_simplex(
-                summation=summation + n_elements,
-                n_elements=n_elements,
-                with_zero=False,
-            )
-            vec = [tv - 1 for tv in temp_vec]
+        if not with_zero and n_elements > summation:
+            error_msg = "The sum cannot be greater than the number of positive integers requested."
+            raise ValueError(error_msg)
+
+        # Adjust the sum to account for the possibility of zeros.
+        shift = 0 if not with_zero else n_elements
+        adjusted_sum = summation + shift
+
+        # Generate n_elements - 1 random integers in the range [1, adjusted_sum - 1].
+        temp_x = sorted(self.sample(range(1, adjusted_sum), k=n_elements - 1))
+        vec = np.diff([0, *temp_x, adjusted_sum]).astype(int).tolist()
+
+        # Adjust the vector to account for the possibility of zeros.
+        if with_zero:
+            vec = [v - 1 for v in vec]
+
         return vec
 
     def continuous_random_vector_from_simplex(
@@ -538,32 +529,23 @@ class MRG32k3a(random.Random):
             # Generate a vector of length n_elements of i.i.d. Exponential(1)
             # random variates. Normalize all values by the sum and multiply by
             # "summation".
-            exp_rvs = [self.expovariate(lambd=1) for _ in range(n_elements)]
-            exp_sum = np.sum(exp_rvs)
-            vec = [summation * x / exp_sum for x in exp_rvs]
-        else:  # Sum must equal summation.
-            # Follows Theorem 2.1 of "Non-Uniform Random Variate Generation" by DeVroye.
-            # Chapter 11, page 568.
-            # Generate a vector of length n_elements of i.i.d. Uniform(0, 1)
-            # random variates. Sort it in ascending order, pre-append
-            # "0", and post-append "summation".
-            unif_rvs = [self.random() for _ in range(n_elements)]
-            unif_rvs.sort()
-            x = [0, *unif_rvs, 1]
-            # Take differences between consecutive terms. Result will sum to 1.
-            diffs = np.array([x[idx + 1] - x[idx] for idx in range(n_elements + 1)])
-            # Construct a matrix of the vertices of the simplex in R^d in regular position.
-            # Includes zero vector and d unit vectors in R^d.
-            vertices = np.concatenate(
-                (np.zeros((1, n_elements)), np.identity(n=n_elements)), axis=0
-            )
-            # Multiply each vertex by the corresponding term in diffs.
-            # Then multiply each component by "summation" and sum the vectors
-            # to get the convex combination of the vertices (scaled up to "summation").
-            vec = list(
-                summation * np.sum(np.multiply(vertices, diffs[:, np.newaxis]), axis=0)
-            )
-        return vec
+            exp_rvs = np.array([self.expovariate(lambd=1) for _ in range(n_elements)])
+            return (summation * exp_rvs / np.sum(exp_rvs)).astype(float).tolist()
+
+        # Follows Theorem 2.1 of "Non-Uniform Random Variate Generation" by DeVroye.
+        # Chapter 11, page 568.
+        # Generate a vector of length n_elements of i.i.d. Uniform(0, 1)
+        # random variates. Sort it in ascending order, pre-append
+        # "0", and post-append "summation".
+        unif_rvs = np.sort(np.array([self.random() for _ in range(n_elements)]))
+        diffs = np.diff(np.concatenate(([0], unif_rvs, [1])))
+        # Construct a matrix of the vertices of the simplex in R^d in regular position.
+        # Includes zero vector and d unit vectors in R^d.
+        vertices = np.vstack((np.zeros(n_elements), np.eye(n_elements)))
+        # Multiply each vertex by the corresponding term in diffs.
+        # Then multiply each component by "summation" and sum the vectors
+        # to get the convex combination of the vertices (scaled up to "summation").
+        return (summation * diffs @ vertices).astype(float).tolist()
 
     def advance_stream(self) -> None:
         """Advance the state of the generator to the start of the next stream.
