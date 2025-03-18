@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import random
 from copy import deepcopy
-from math import ceil, exp, log, sqrt
 
 import numpy as np
 from numpy.linalg import matrix_power
@@ -166,7 +165,7 @@ def bsm(u: float) -> float:
         # Approximate from the tails (Moro 1995).
         signum = -1 if y < 0 else 1
         r = u if y < 0 else 1 - u
-        return signum * float(polyval(log(-log(r)), bsmc))
+        return signum * float(polyval(np.log(-np.log(r)), bsmc))
 
 
 class MRG32k3a(random.Random):
@@ -361,14 +360,11 @@ class MRG32k3a(random.Random):
             A lognormal random variate from the specified distribution.
 
         """
-        try:
-            log_uq = log(uq)
-            mu = (log(lq) + log_uq) / 2
-            return exp(self.normalvariate(mu, (log_uq - mu) / 1.96))
-        except ValueError as e:
-            if lq <= 0 or uq <= 0:
-                raise ValueError("Quantiles must be greater than 0.") from e
-            raise e
+        if lq <= 0 or uq <= 0:
+            raise ValueError("Quantiles must be greater than 0.")
+        log_uq = np.log(uq)
+        mu = (np.log(lq) + log_uq) / 2
+        return np.exp(self.normalvariate(mu, (log_uq - mu) / 1.96))
 
     def mvnormalvariate(
         self,
@@ -399,8 +395,9 @@ class MRG32k3a(random.Random):
         """
         chol = np.linalg.cholesky(cov) if not factorized else cov
         observations = [self.normalvariate(0, 1) for _ in range(len(cov))]
-        result = np.dot(chol, observations).transpose() + mean_vec
-        return [float(x) for x in result]
+        return (
+            (np.dot(chol, observations).transpose() + mean_vec).astype(float).tolist()
+        )
 
     def poissonvariate(self, lmbda: float) -> int:
         """Generate a Poisson random variate.
@@ -418,10 +415,12 @@ class MRG32k3a(random.Random):
 
         """
         if lmbda >= 35:
-            return max(ceil(lmbda + sqrt(lmbda) * self.normalvariate() - 0.5), 0)
+            return max(
+                int(np.ceil(lmbda + np.sqrt(lmbda) * self.normalvariate() - 0.5)), 0
+            )
         n = 0
         p = self.random()
-        threshold = exp(-lmbda)
+        threshold = np.exp(-lmbda)
         while p >= threshold:
             p *= self.random()
             n += 1
