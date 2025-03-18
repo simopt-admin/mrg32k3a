@@ -10,8 +10,6 @@ import mrg32k3a.mrg32k3a as mrg
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-seed = (12345, 12345, 12345, 12345, 12345, 12345)
-
 
 class TestRandom(unittest.TestCase):
     def __get_nth_random(self, n) -> float:
@@ -73,23 +71,25 @@ class TestRandom(unittest.TestCase):
 
 
 class TestStates(unittest.TestCase):
+    seed = (12345, 12345, 12345, 12345, 12345, 12345)
+
     A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrg.mrga13n, mrg.mrga12, 0]])
     A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrg.mrga23n, 0, mrg.mrga21]])
 
     def test_get_current_state(self):
         rng = mrg.MRG32k3a()
-        self.assertEqual(rng.get_current_state(), seed)
+        self.assertEqual(rng.get_current_state(), self.seed)
 
     def test_first_state(self):
         rng = mrg.MRG32k3a()
-        self.assertEqual(rng._current_state, seed)
+        self.assertEqual(rng._current_state, self.seed)
 
     def test_second_state(self):
         rng = mrg.MRG32k3a()
         rng.random()
-        st1_mult = self.A1p0 @ seed[0:3]
+        st1_mult = self.A1p0 @ self.seed[0:3]
         st1 = st1_mult % mrg.mrgm1
-        st2_mult = self.A2p0 @ seed[3:6]
+        st2_mult = self.A2p0 @ self.seed[3:6]
         st2 = st2_mult % mrg.mrgm2
         state = st1.tolist() + st2.tolist()
         self.assertSequenceEqual(rng._current_state, state)
@@ -100,9 +100,9 @@ class TestStates(unittest.TestCase):
         rng.random()
         A1sq = self.A1p0 @ self.A1p0
         A2sq = self.A2p0 @ self.A2p0
-        st1_mult = A1sq @ seed[0:3]
+        st1_mult = A1sq @ self.seed[0:3]
         st1 = st1_mult % mrg.mrgm1
-        st2_mult = A2sq @ seed[3:6]
+        st2_mult = A2sq @ self.seed[3:6]
         st2 = st2_mult % mrg.mrgm2
         state = st1.tolist() + st2.tolist()
         self.assertSequenceEqual(rng._current_state, state)
@@ -126,6 +126,8 @@ class TestStates(unittest.TestCase):
 
 
 class TestStreams(unittest.TestCase):
+    seed = (12345, 12345, 12345, 12345, 12345, 12345)
+
     def test_advance_stream_1(self):
         rng = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 1])
         rng.advance_stream()
@@ -152,7 +154,7 @@ class TestStreams(unittest.TestCase):
         rng.advance_substream()
         rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 0])
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, seed)
+        self.assertEqual(rng.stream_start, self.seed)
         self.assertEqual(rng.substream_start, rng._current_state)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
         self.assertEqual(rng.s_ss_sss_index, [0, 1, 0])
@@ -163,7 +165,7 @@ class TestStreams(unittest.TestCase):
             rng.advance_substream()
         rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 10, 0])
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, seed)
+        self.assertEqual(rng.stream_start, self.seed)
         self.assertEqual(rng.substream_start, rng._current_state)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
         self.assertEqual(rng.s_ss_sss_index, [0, 10, 0])
@@ -173,8 +175,8 @@ class TestStreams(unittest.TestCase):
         rng.advance_subsubstream()
         rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 0, 1])
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, seed)
-        self.assertEqual(rng.substream_start, seed)
+        self.assertEqual(rng.stream_start, self.seed)
+        self.assertEqual(rng.substream_start, self.seed)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
         self.assertEqual(rng.s_ss_sss_index, [0, 0, 1])
 
@@ -184,8 +186,8 @@ class TestStreams(unittest.TestCase):
             rng.advance_subsubstream()
         rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 0, 10])
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, seed)
-        self.assertEqual(rng.substream_start, seed)
+        self.assertEqual(rng.stream_start, self.seed)
+        self.assertEqual(rng.substream_start, self.seed)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
         self.assertEqual(rng.s_ss_sss_index, [0, 0, 10])
 
@@ -291,6 +293,239 @@ class TestBSM(unittest.TestCase):
         self.assertAlmostEqual(mrg.bsm(0.94), 1.5547735946074814)
         self.assertAlmostEqual(mrg.bsm(0.96), 1.7506860713064076)
         self.assertAlmostEqual(mrg.bsm(0.98), 2.0537489105686255)
+
+
+class TestVariates(unittest.TestCase):
+    def setUp(self):
+        self.rng = mrg.MRG32k3a()
+        # Make sure we're getting a "fresh" RNG
+        # This makes sure any small errors propagate to the tests
+        for _ in range(100):
+            self.rng.random()
+
+    def test_normal(self):
+        results = self.rng.normalvariate()
+        self.assertTrue(isinstance(results, float))
+        self.assertAlmostEqual(results, -1.407282773533036)
+
+    def test_normal_dist(self):
+        results = [self.rng.normalvariate() for _ in range(200000)]
+        mean = np.mean(results)
+        std = np.std(results)
+        self.assertAlmostEqual(mean, 0, places=2)
+        self.assertAlmostEqual(std, 1, places=2)
+
+        results = [self.rng.normalvariate(1, 2) for _ in range(200000)]
+        mean = np.mean(results)
+        std = np.std(results)
+        self.assertAlmostEqual(mean, 1, places=2)
+        self.assertAlmostEqual(std, 2, places=2)
+
+    def test_log_normal(self):
+        result = self.rng.lognormalvariate(0.1, 5)
+        self.assertTrue(isinstance(result, float))
+        self.assertAlmostEqual(result, 0.17360153803999934)
+
+        try:
+            result = self.rng.lognormalvariate(-0.1, 5)
+        except Exception as e:
+            self.assertTrue(isinstance(e, ValueError))
+        else:
+            self.fail("Exception not raised")
+
+        try:
+            result = self.rng.lognormalvariate(0.1, -5)
+        except Exception as e:
+            self.assertTrue(isinstance(e, ValueError))
+        else:
+            self.fail("Exception not raised")
+
+    def test_log_normal_dist(self):
+        results = [self.rng.lognormalvariate(0.1, 5) for _ in range(500000)]
+        mean = np.mean(results)
+        std = np.std(results)
+        self.assertAlmostEqual(mean, 1.1605134466960465, places=2)
+        self.assertAlmostEqual(std, 1.5117748500697967, places=2)
+
+    def test_mv_normal(self):
+        averages = [0, 1, 2, 3]
+        matrix = [
+            [1, 0.5, 0.3, 0.2],
+            [0.5, 1, 0.7, 0.4],
+            [0.3, 0.7, 1, 0.6],
+            [0.2, 0.4, 0.6, 1],
+        ]
+        result = self.rng.mvnormalvariate(mean_vec=averages, cov=matrix)
+        self.assertTrue(isinstance(result, list))
+        self.assertEqual(len(result), 4)
+        self.assertTrue(all(isinstance(x, float) for x in result))
+        self.assertAlmostEqual(result[0], -1.407282773533036)
+        self.assertAlmostEqual(result[1], 0.3837072871268238)
+        self.assertAlmostEqual(result[2], 3.3127997256814443)
+        self.assertAlmostEqual(result[3], 4.086612958572276)
+
+    def test_mv_normal_dist(self):
+        averages = [0, 1, 2, 3]
+        matrix = [
+            [1, 0.5, 0.3, 0.2],
+            [0.5, 1, 0.7, 0.4],
+            [0.3, 0.7, 1, 0.6],
+            [0.2, 0.4, 0.6, 1],
+        ]
+        results = [
+            self.rng.mvnormalvariate(mean_vec=averages, cov=matrix)
+            for _ in range(150000)
+        ]
+        means = np.mean(results, axis=0)
+        stds = np.std(results, axis=0)
+        self.assertAlmostEqual(means[0], 0, places=2)
+        self.assertAlmostEqual(means[1], 1, places=2)
+        self.assertAlmostEqual(means[2], 2, places=2)
+        self.assertAlmostEqual(means[3], 3, places=2)
+        self.assertAlmostEqual(stds[0], 1, places=2)
+        self.assertAlmostEqual(stds[1], 1, places=2)
+        self.assertAlmostEqual(stds[2], 1, places=2)
+        self.assertAlmostEqual(stds[3], 1, places=2)
+
+    def test_poisson(self):
+        rng = mrg.MRG32k3a()
+        result = rng.poissonvariate(-10)
+        self.assertTrue(isinstance(result, int))
+        self.assertEqual(result, 0)
+
+        result = rng.poissonvariate(1)
+        self.assertTrue(isinstance(result, int))
+        self.assertEqual(result, 0)
+
+        result = rng.poissonvariate(10)
+        self.assertTrue(isinstance(result, int))
+        self.assertEqual(result, 10)
+
+        result = rng.poissonvariate(34)
+        self.assertTrue(isinstance(result, int))
+        self.assertEqual(result, 29)
+
+        result = rng.poissonvariate(35)
+        self.assertTrue(isinstance(result, int))
+        self.assertEqual(result, 44)
+
+        result = rng.poissonvariate(100)
+        self.assertTrue(isinstance(result, int))
+        self.assertEqual(result, 97)
+
+    def test_poission_dist(self):
+        rng = mrg.MRG32k3a()
+        results = [rng.poissonvariate(10) for _ in range(100000)]
+        mean = np.mean(results)
+        std = np.std(results)
+        self.assertAlmostEqual(mean, 10, places=2)
+        self.assertAlmostEqual(std, 3.16, places=1)
+
+        result = [rng.poissonvariate(100) for _ in range(100000)]
+        mean = np.mean(result)
+        std = np.std(result)
+        self.assertAlmostEqual(mean, 100, delta=0.1)
+        self.assertAlmostEqual(std, 10, places=1)
+
+    def test_gumbel(self):
+        rng = mrg.MRG32k3a()
+        result = rng.gumbelvariate(0, 1)
+        self.assertTrue(isinstance(result, float))
+        self.assertAlmostEqual(result, -0.7243941789321531)
+
+    def test_gumbel_dist(self):
+        rng = mrg.MRG32k3a()
+        results = [rng.gumbelvariate(2, 1) for _ in range(100000)]
+        mean = np.mean(results)
+        std = np.std(results)
+        self.assertAlmostEqual(mean, 2.577, places=2)
+        self.assertAlmostEqual(std, 1.28, places=2)
+
+    def test_binomial(self):
+        rng = mrg.MRG32k3a()
+        result = rng.binomialvariate(1, 0.5)
+        self.assertTrue(isinstance(result, int))
+        self.assertEqual(result, 0)
+
+        result = rng.binomialvariate(2, 0)
+        self.assertTrue(isinstance(result, int))
+        self.assertEqual(result, 0)
+
+        result = rng.binomialvariate(3, 1)
+        self.assertTrue(isinstance(result, int))
+        self.assertEqual(result, 3)
+
+    def test_binomial_dist(self):
+        rng = mrg.MRG32k3a()
+        results = [rng.binomialvariate(10, 0.5) for _ in range(100000)]
+        mean = np.mean(results)
+        std = np.std(results)
+        self.assertAlmostEqual(mean, 5, delta=0.01)
+        self.assertAlmostEqual(std, 1.58, delta=0.01)
+
+        results = [rng.binomialvariate(100, 0.3) for _ in range(100000)]
+        mean = np.mean(results)
+        std = np.std(results)
+        self.assertAlmostEqual(mean, 30, delta=0.03)
+        self.assertAlmostEqual(std, 4.58, delta=0.03)
+
+
+class TestVectors(unittest.TestCase):
+    def test_int_random_vector(self):
+        rng = mrg.MRG32k3a()
+        result = rng.integer_random_vector_from_simplex(3, 10)
+        self.assertTrue(isinstance(result, list))
+        self.assertEqual(len(result), 3)
+        self.assertEqual(sum(result), 10)
+        self.assertTrue(all(x > 0 for x in result))
+        self.assertTrue(all(isinstance(x, int) for x in result))
+        self.assertEqual(result, [7, 2, 1])
+
+        results = [rng.integer_random_vector_from_simplex(4, 9) for _ in range(100)]
+        self.assertTrue(all(len(x) == 4 for x in results))
+        self.assertTrue(all(sum(x) == 9 for x in results))
+        self.assertTrue(all(x > 0 for x in result))
+
+        try:
+            rng.integer_random_vector_from_simplex(10, 5)
+        except Exception as e:
+            self.assertTrue(isinstance(e, ValueError))
+        else:
+            self.fail("Exception not raised")
+
+        results = [
+            rng.integer_random_vector_from_simplex(2, 1, True) for _ in range(100)
+        ]
+        self.assertTrue(all(len(x) == 2 for x in results))
+        self.assertTrue(all(sum(x) == 1 for x in results))
+        count_0 = sum([1 for x in results if x[0] == 0 or x[1] == 0])
+        count_1 = sum([1 for x in results if x[0] == 1 or x[1] == 1])
+        self.assertTrue(count_0 == 100)
+        self.assertTrue(count_1 == 100)
+
+    def test_cont_random_vector(self):
+        rng = mrg.MRG32k3a()
+        result = rng.continuous_random_vector_from_simplex(3, 10)
+        self.assertTrue(isinstance(result, list))
+        self.assertEqual(len(result), 3)
+        self.assertLessEqual(sum(result), 10)
+        self.assertTrue(all(isinstance(x, float) for x in result))
+        self.assertAlmostEqual(result[0], 1.8217489353669294, places=2)
+        self.assertAlmostEqual(result[1], 0.09341549813524419, places=2)
+        self.assertAlmostEqual(result[2], 6.814724346032055, places=2)
+
+        results = [rng.continuous_random_vector_from_simplex(4, 9) for _ in range(100)]
+        self.assertTrue(all(len(x) == 4 for x in results))
+        self.assertTrue(all(sum(x) < 9 for x in results))
+        self.assertTrue(all(x > 0 for x in result))
+
+        results = [
+            rng.continuous_random_vector_from_simplex(2, 1, True) for _ in range(100)
+        ]
+        self.assertTrue(all(len(x) == 2 for x in results))
+        for result in results:
+            self.assertAlmostEqual(sum(result), 1, places=14)
+        self.assertTrue(all(x > 0 for x in result))
 
 
 if __name__ == "__main__":

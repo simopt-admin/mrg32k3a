@@ -161,12 +161,12 @@ def bsm(u: float) -> float:
     if abs(y) < 0.42:
         # Approximate from the center (Beasly-Springer 1977).
         r = y * y
-        return y * (polyval(r, bsma) / polyval(r, bsmb))
+        return y * float(polyval(r, bsma) / polyval(r, bsmb))
     else:
         # Approximate from the tails (Moro 1995).
         signum = -1 if y < 0 else 1
         r = u if y < 0 else 1 - u
-        return signum * polyval(log(-log(r)), bsmc)
+        return signum * float(polyval(log(-log(r)), bsmc))
 
 
 class MRG32k3a(random.Random):
@@ -361,8 +361,13 @@ class MRG32k3a(random.Random):
             A lognormal random variate from the specified distribution.
 
         """
-        mu = (log(lq) + log(uq)) / 2
-        return exp(self.normalvariate(mu, (log(uq) - mu) / 1.96))
+        try:
+            mu = (log(lq) + log(uq)) / 2
+            return exp(self.normalvariate(mu, (log(uq) - mu) / 1.96))
+        except ValueError as e:
+            if lq <= 0 or uq <= 0:
+                raise ValueError("Quantiles must be greater than 0.") from e
+            raise e
 
     def mvnormalvariate(
         self,
@@ -394,7 +399,8 @@ class MRG32k3a(random.Random):
         n_cols = len(cov)
         chol = np.linalg.cholesky(cov) if not factorized else cov
         observations = [self.normalvariate(0, 1) for _ in range(n_cols)]
-        return chol.dot(observations).transpose() + mean_vec
+        result = chol.dot(observations).transpose() + mean_vec
+        return [float(x) for x in result]
 
     def poissonvariate(self, lmbda: float) -> int:
         """Generate a Poisson random variate.
@@ -444,7 +450,7 @@ class MRG32k3a(random.Random):
         """
         u = self.random()
         q = mu - beta * np.log(-np.log(u))
-        return q
+        return float(q)
 
     def binomialvariate(self, n: int, p: float) -> int:
         """Generate a Binomial(n, p) random variate.
@@ -463,7 +469,7 @@ class MRG32k3a(random.Random):
 
         """
         x = np.sum(self.choices(population=[0, 1], weights=[1 - p, p], k=n))
-        return x
+        return int(x)
 
     def integer_random_vector_from_simplex(
         self, n_elements: int, summation: int, with_zero: bool = False
