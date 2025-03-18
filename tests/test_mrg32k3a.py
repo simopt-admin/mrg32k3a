@@ -13,7 +13,66 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 seed = (12345, 12345, 12345, 12345, 12345, 12345)
 
 
-class TestMRG32k3a(unittest.TestCase):
+class TestRandom(unittest.TestCase):
+    def __get_nth_random(self, n) -> float:
+        rng = mrg.MRG32k3a()
+        for _ in range(n - 1):
+            rng.random()
+        return rng.random()
+
+    def __assert_almost_equal(self, a, b):
+        a = round(a, 15)
+        b = round(b, 15)
+        self.assertEqual(a, b)
+
+    def test_random_1(self):
+        rand_val = self.__get_nth_random(1)
+        self.__assert_almost_equal(rand_val, 0.127011122046577)
+
+    def test_random_2(self):
+        rand_val = self.__get_nth_random(2)
+        self.assertEqual(rand_val, 0.3185275653967945)
+
+    def test_random_3(self):
+        rand_val = self.__get_nth_random(3)
+        self.assertEqual(rand_val, 0.3091860155832701)
+
+    def test_random_10(self):
+        rand_val = self.__get_nth_random(10)
+        self.assertEqual(rand_val, 0.7558522371615435)
+
+    def test_random_100(self):
+        rand_val = self.__get_nth_random(100)
+        self.assertEqual(rand_val, 0.7592386016439714)
+
+    def test_random_1000(self):
+        rand_val = self.__get_nth_random(1000)
+        self.assertEqual(rand_val, 0.9860784868021322)
+
+    def test_random_10000(self):
+        rand_val = self.__get_nth_random(10000)
+        self.assertEqual(rand_val, 0.2044975435211065)
+
+    def test_random_100000(self):
+        rand_val = self.__get_nth_random(100000)
+        self.assertEqual(rand_val, 0.6962891099574359)
+
+    def test_random_1000000(self):
+        rand_val = self.__get_nth_random(1000000)
+        self.assertEqual(rand_val, 0.37578835621568796)
+
+    def test_uniform_distribution(self):
+        rng = mrg.MRG32k3a()
+        rand_vals = [rng.random() for _ in range(1000000)]
+        # Calculate mean and std of random values
+        mean = np.mean(rand_vals)
+        std = np.std(rand_vals)
+        # Make sure mean and std approximate a uniform distribution
+        self.assertTrue(np.isclose(mean, 0.5, rtol=1e-3))
+        self.assertTrue(np.isclose(std, 1 / np.sqrt(12), rtol=1e-3))
+
+
+class TestStates(unittest.TestCase):
     def test_get_current_state(self):
         rng = mrg.MRG32k3a()
         self.assertEqual(rng.get_current_state(), seed)
@@ -62,6 +121,8 @@ class TestMRG32k3a(unittest.TestCase):
         ]
         self.assertSequenceEqual(rng._current_state, expected_state)
 
+
+class TestStreams(unittest.TestCase):
     def test_advance_stream(self):
         rng = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 1])
         rng.advance_stream()
@@ -151,6 +212,8 @@ class TestMRG32k3a(unittest.TestCase):
         self.assertEqual(rng.subsubstream_start, rng2.subsubstream_start)
         self.assertEqual(rng.s_ss_sss_index, rng2.s_ss_sss_index)
 
+
+class TestBSM(unittest.TestCase):
     def test_bsm_ab(self):
         result_low = mrg.bsm(0.1)
         self.assertAlmostEqual(result_low, np.float64(-1.2815515632770351))
