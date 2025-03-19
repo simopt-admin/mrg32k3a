@@ -35,51 +35,52 @@ A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga23n, 0, mrga21]])
 
 # These need to be object-types to avoid overflow errors
 # (Python's int type has arbitrary precision)
+# TODO: verify these values
 A1p47 = np.array(
     [
-        [2150882049, 1012615007, 1753411989],
-        [234971272, 3938477338, 966612171],
-        [3006247121, 3687673689, 940826602],
+        [1362557480, 1064944949, 4278720212],
+        [867580829, 3848976950, 1064944949],
+        [2109817045, 1853480509, 3848976950],
     ],
     dtype=object,
 )
 A2p47 = np.array(
     [
-        [1046183310, 837768296, 3615496901],
-        [17393928, 3278539534, 2641844075],
-        [1993644961, 3704895436, 3750989706],
+        [1270934849, 477640316, 1465487183],
+        [2599502964, 1270934849, 3137997351],
+        [3120367298, 2599502964, 1080791920],
     ],
     dtype=object,
 )
 A1p94 = np.array(
     [
-        [755664978, 569748550, 3548871349],
-        [1218252973, 522684588, 810477570],
-        [1389789784, 3146723777, 3218949703],
+        [2873769531, 2213862909, 596284397],
+        [141166644, 1261269623, 2213862909],
+        [3967600061, 2464943930, 1261269623],
     ],
     dtype=object,
 )
 A2p94 = np.array(
     [
-        [1562155877, 1430955988, 3645089813],
-        [3893748262, 3622354192, 1033072313],
-        [369450389, 3504376307, 2126264688],
+        [2329992155, 2444200830, 589886684],
+        [3268497670, 2329992155, 588257443],
+        [3619815081, 3268497670, 4150779319],
     ],
     dtype=object,
 )
 A1p141 = np.array(
     [
-        [766528512, 1921679764, 2446008495],
-        [2261886462, 1413988183, 1120803221],
-        [3269079875, 1181992446, 144371898],
+        [3230096243, 2163243729, 3262178024],
+        [1412076960, 4088518247, 2163243729],
+        [3991553306, 3012743000, 4088518247],
     ],
     dtype=object,
 )
 A2p141 = np.array(
     [
-        [2180513949, 1961145626, 3911964994],
-        [963935459, 2169350115, 2047463392],
-        [2520335674, 2435164196, 3566463752],
+        [4266987687, 382345211, 3869637592],
+        [1853032050, 4266987687, 1346388820],
+        [1351757815, 1853032050, 4239046656],
     ],
     dtype=object,
 )
@@ -309,6 +310,7 @@ class MRG32k3a(random.Random):
 
         """
         self._current_state, u = self.generate(self._current_state)
+        self.seed(self._current_state)
         return float(u)
 
     def get_current_state(self) -> tuple[int, int, int, int, int, int]:
@@ -369,7 +371,7 @@ class MRG32k3a(random.Random):
     def mvnormalvariate(
         self,
         mean_vec: list[float],
-        cov: np.ndarray,
+        cov: list[list[float]] | np.ndarray,
         factorized: bool = False,
     ) -> list[float]:
         """Generate a normal random vector.
@@ -393,6 +395,8 @@ class MRG32k3a(random.Random):
             Multivariate normal random variate from the specified distribution.
 
         """
+        if not isinstance(cov, np.ndarray):
+            cov = np.array(cov)
         chol = np.linalg.cholesky(cov) if not factorized else cov
         observations = [self.normalvariate(0, 1) for _ in range(len(cov))]
         return (
@@ -551,10 +555,10 @@ class MRG32k3a(random.Random):
 
         Streams are of length 2**141.
         """
-        state = self.stream_start
+        state = np.array(self.stream_start)
         # Split the state into 2 components of length 3.
-        st1 = np.array(state[0:3])
-        st2 = np.array(state[3:6])
+        st1 = state[0:3]
+        st2 = state[3:6]
         # Efficiently advance state -> A*s % m for both state parts.
         nst1 = (A1p141 @ st1) % mrgm1
         nst2 = (A2p141 @ st2) % mrgm2
@@ -576,10 +580,10 @@ class MRG32k3a(random.Random):
 
         Substreams are of length 2**94.
         """
-        state = self.substream_start
+        state = np.array(self.substream_start)
         # Split the state into 2 components of length 3.
-        st1 = np.array(state[0:3])
-        st2 = np.array(state[3:6])
+        st1 = state[0:3]
+        st2 = state[3:6]
         # Efficiently advance state -> A*s % m for both state parts.
         nst1 = (A1p94 @ st1) % mrgm1
         nst2 = (A2p94 @ st2) % mrgm2
@@ -599,10 +603,10 @@ class MRG32k3a(random.Random):
 
         Subsubstreams are of length 2**47.
         """
-        state = self.subsubstream_start
+        state = np.array(self.subsubstream_start)
         # Split the state into 2 components of length 3.
-        st1 = np.array(state[0:3])
-        st2 = np.array(state[3:6])
+        st1 = state[0:3]
+        st2 = state[3:6]
         # Efficiently advance state -> A*s % m for both state parts.
         nst1 = (A1p47 @ st1) % mrgm1
         nst2 = (A2p47 @ st2) % mrgm2
@@ -648,12 +652,14 @@ class MRG32k3a(random.Random):
 
         """
         # Grab the stream, substream, and subsubstream indices.
-        stream, substream, subsubstream = s_ss_sss_triplet
+        stream = s_ss_sss_triplet[0]
+        substream = s_ss_sss_triplet[1]
+        subsubstream = s_ss_sss_triplet[2]
         # Start from the reference seed.
-        state = self.ref_seed
+        state = np.array(self.ref_seed)
         # Split the reference seed into 2 components of length 3.
-        st1 = np.array(state[0:3])
-        st2 = np.array(state[3:6])
+        st1 = state[0:3]
+        st2 = state[3:6]
         # Advance to start of specified stream.
         # Efficiently advance state -> A*s % m for both state parts.
         power_mod_1 = matrix_power(A1p141, stream) % mrgm1

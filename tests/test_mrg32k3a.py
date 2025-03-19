@@ -91,7 +91,7 @@ class TestStates(unittest.TestCase):
         st1 = st1_mult % mrg.mrgm1
         st2_mult = self.A2p0 @ self.seed[3:6]
         st2 = st2_mult % mrg.mrgm2
-        state = st1.tolist() + st2.tolist()
+        state = np.hstack((st1, st2)).tolist()
         self.assertSequenceEqual(rng._current_state, state)
 
     def test_third_state(self):
@@ -128,127 +128,217 @@ class TestStates(unittest.TestCase):
 class TestStreams(unittest.TestCase):
     seed = (12345, 12345, 12345, 12345, 12345, 12345)
 
+    next_rand = {
+        (0, 0, 0): 0.12701112204657714,
+        (0, 0, 1): 0.522233116585875,
+        (0, 0, 10): 0.8947632701859717,
+        (0, 1, 0): 0.22024540691893657,
+        (0, 1, 1): 0.43552150707423537,
+        (0, 10, 0): 0.8966772306032628,
+        (1, 0, 0): 0.2652107696430385,
+        (1, 0, 1): 0.3091860155832701,
+        (1, 1, 0): 0.691769288593906,
+        (1, 1, 1): 0.8285534112572459,
+        (10, 0, 0): 0.2089612207989986,
+    }
+
+    def __check_next_rand(self, rng: mrg.MRG32k3a, index: list[int]):
+        random = rng.random()
+        self.assertEqual(random, self.next_rand[tuple(index)])
+
     def test_advance_stream_1(self):
-        rng = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 1])
+        stream_idx = [0, 1, 1]
+        rng = mrg.MRG32k3a(s_ss_sss_index=stream_idx)
+        self.__check_next_rand(rng, stream_idx)
+
         rng.advance_stream()
-        rng2 = mrg.MRG32k3a(s_ss_sss_index=[1, 0, 0])
+        stream_idx2 = [1, 0, 0]
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
         self.assertEqual(rng.stream_start, rng._current_state)
         self.assertEqual(rng.substream_start, rng._current_state)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
-        self.assertEqual(rng.s_ss_sss_index, [1, 0, 0])
+
+        self.assertEqual(rng.s_ss_sss_index, stream_idx2)
+        self.__check_next_rand(rng, stream_idx2)
 
     def test_advance_stream_10(self):
-        rng = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 1])
+        stream_idx = [0, 1, 1]
+        rng = mrg.MRG32k3a(s_ss_sss_index=stream_idx)
+        self.__check_next_rand(rng, stream_idx)
+
         for _ in range(10):
             rng.advance_stream()
-        rng2 = mrg.MRG32k3a(s_ss_sss_index=[10, 0, 0])
+        stream_idx2 = [10, 0, 0]
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
         self.assertEqual(rng.stream_start, rng._current_state)
         self.assertEqual(rng.substream_start, rng._current_state)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
-        self.assertEqual(rng.s_ss_sss_index, [10, 0, 0])
+
+        self.assertEqual(rng.s_ss_sss_index, stream_idx2)
+        self.__check_next_rand(rng, stream_idx2)
 
     def test_advance_substream_1(self):
-        rng = mrg.MRG32k3a(s_ss_sss_index=[0, 0, 1])
+        stream_idx = [0, 0, 1]
+        rng = mrg.MRG32k3a(s_ss_sss_index=stream_idx)
+        self.__check_next_rand(rng, stream_idx)
+
         rng.advance_substream()
-        rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 1, 0])
+        stream_idx2 = [0, 1, 0]
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
         self.assertEqual(rng.stream_start, self.seed)
         self.assertEqual(rng.substream_start, rng._current_state)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
-        self.assertEqual(rng.s_ss_sss_index, [0, 1, 0])
+
+        self.assertEqual(rng.s_ss_sss_index, stream_idx2)
+        self.__check_next_rand(rng, stream_idx2)
 
     def test_advance_substream_10(self):
-        rng = mrg.MRG32k3a(s_ss_sss_index=[0, 0, 1])
+        stream_idx = [0, 0, 1]
+        rng = mrg.MRG32k3a(s_ss_sss_index=stream_idx)
+        self.__check_next_rand(rng, stream_idx)
+
         for _ in range(10):
             rng.advance_substream()
-        rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 10, 0])
+        stream_idx2 = [0, 10, 0]
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
         self.assertEqual(rng.stream_start, self.seed)
         self.assertEqual(rng.substream_start, rng._current_state)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
-        self.assertEqual(rng.s_ss_sss_index, [0, 10, 0])
+
+        self.assertEqual(rng.s_ss_sss_index, stream_idx2)
+        self.__check_next_rand(rng, stream_idx2)
 
     def test_advance_subsubstream_1(self):
+        stream_idx = [0, 0, 0]
         rng = mrg.MRG32k3a()
+        self.__check_next_rand(rng, stream_idx)
+
         rng.advance_subsubstream()
-        rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 0, 1])
+        stream_idx2 = [0, 0, 1]
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
         self.assertEqual(rng.stream_start, self.seed)
         self.assertEqual(rng.substream_start, self.seed)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
-        self.assertEqual(rng.s_ss_sss_index, [0, 0, 1])
+        self.assertEqual(rng.s_ss_sss_index, stream_idx2)
+
+        self.__check_next_rand(rng, stream_idx2)
 
     def test_advance_subsubstream_10(self):
-        rng = mrg.MRG32k3a()
+        stream_idx = [0, 0, 0]
+        rng = mrg.MRG32k3a(s_ss_sss_index=stream_idx)
+        self.__check_next_rand(rng, stream_idx)
+
         for _ in range(10):
             rng.advance_subsubstream()
-        rng2 = mrg.MRG32k3a(s_ss_sss_index=[0, 0, 10])
+        stream_idx2 = [0, 0, 10]
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
         self.assertEqual(rng.stream_start, self.seed)
         self.assertEqual(rng.substream_start, self.seed)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
-        self.assertEqual(rng.s_ss_sss_index, [0, 0, 10])
+
+        self.assertEqual(rng.s_ss_sss_index, stream_idx2)
+        self.__check_next_rand(rng, stream_idx2)
 
     def test_reset_stream(self):
-        rng = mrg.MRG32k3a(s_ss_sss_index=[1, 1, 1])
-        rng.random()
+        stream_idx = [1, 1, 1]
+        rng = mrg.MRG32k3a(s_ss_sss_index=stream_idx)
+        self.__check_next_rand(rng, stream_idx)
+
         rng.reset_stream()
-        rng2 = mrg.MRG32k3a(s_ss_sss_index=[1, 0, 0])
-        self.assertEqual(rng._current_state, rng2._current_state)
         self.assertEqual(rng.stream_start, rng._current_state)
         self.assertEqual(rng.substream_start, rng._current_state)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
-        self.assertEqual(rng.s_ss_sss_index, [1, 0, 0])
+
+        stream_idx2 = [1, 0, 0]
+        self.assertEqual(rng.s_ss_sss_index, stream_idx2)
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
+        self.assertEqual(rng._current_state, rng2._current_state)
+        self.__check_next_rand(rng2, stream_idx2)
+
+        rng3 = mrg.MRG32k3a()
+        rng3.advance_stream()
+        self.assertEqual(rng.stream_start, rng3._current_state)
+        self.__check_next_rand(rng3, stream_idx2)
+
+        self.__check_next_rand(rng, stream_idx2)
 
     def test_reset_substream(self):
-        rng = mrg.MRG32k3a(s_ss_sss_index=[1, 1, 1])
-        rng.random()
+        stream_idx = [1, 1, 1]
+        rng = mrg.MRG32k3a(s_ss_sss_index=stream_idx)
+        self.__check_next_rand(rng, stream_idx)
+
         rng.reset_substream()
-        rng2 = mrg.MRG32k3a(s_ss_sss_index=[1, 1, 0])
+        stream_idx2 = [1, 1, 0]
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
-        rng3 = mrg.MRG32k3a(s_ss_sss_index=[1, 0, 0])
+        self.__check_next_rand(rng2, stream_idx2)
+        self.assertEqual(rng.s_ss_sss_index, stream_idx2)
+
+        stream_idx3 = [1, 0, 0]
+        rng3 = mrg.MRG32k3a(s_ss_sss_index=stream_idx3)
         self.assertEqual(rng.stream_start, rng3._current_state)
         self.assertEqual(rng.substream_start, rng._current_state)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
-        self.assertEqual(rng.s_ss_sss_index, [1, 1, 0])
 
     def test_reset_subsubstream(self):
-        rng = mrg.MRG32k3a(s_ss_sss_index=[1, 1, 1])
-        rng.random()
+        stream_idx = [1, 1, 1]
+        rng = mrg.MRG32k3a(s_ss_sss_index=stream_idx)
+        self.__check_next_rand(rng, stream_idx)
+
         rng.reset_subsubstream()
-        rng2 = mrg.MRG32k3a(s_ss_sss_index=[1, 1, 1])
+        stream_idx2 = [1, 1, 1]
+        rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
-        rng3 = mrg.MRG32k3a(s_ss_sss_index=[1, 0, 0])
-        rng4 = mrg.MRG32k3a(s_ss_sss_index=[1, 1, 0])
+        stream_idx3 = [1, 0, 0]
+        rng3 = mrg.MRG32k3a(s_ss_sss_index=stream_idx3)
+        stream_idx4 = [1, 1, 0]
+        rng4 = mrg.MRG32k3a(s_ss_sss_index=stream_idx4)
         self.assertEqual(rng.stream_start, rng3._current_state)
         self.assertEqual(rng.substream_start, rng4._current_state)
         self.assertEqual(rng.subsubstream_start, rng._current_state)
-        self.assertEqual(rng.s_ss_sss_index, [1, 1, 1])
+        self.assertEqual(rng.s_ss_sss_index, stream_idx2)
+        self.__check_next_rand(rng, stream_idx2)
+        self.__check_next_rand(rng2, stream_idx2)
+        self.__check_next_rand(rng3, stream_idx3)
+        self.__check_next_rand(rng4, stream_idx4)
 
     def test_init_fixed_s_ss_sss(self):
-        rng = mrg.MRG32k3a(s_ss_sss_index=[1, 1, 1])
+        stream_idx = [1, 1, 1]
+        rng = mrg.MRG32k3a(s_ss_sss_index=stream_idx)
         rng2 = mrg.MRG32k3a()
-        rng2.start_fixed_s_ss_sss([1, 1, 1])
+        rng2.start_fixed_s_ss_sss(stream_idx)
         self.assertEqual(rng._current_state, rng2._current_state)
         self.assertEqual(rng.stream_start, rng2.stream_start)
         self.assertEqual(rng.substream_start, rng2.substream_start)
         self.assertEqual(rng.subsubstream_start, rng2.subsubstream_start)
         self.assertEqual(rng.s_ss_sss_index, rng2.s_ss_sss_index)
+        self.__check_next_rand(rng, stream_idx)
+        self.__check_next_rand(rng2, stream_idx)
 
     def test_jump_fixed_s_ss_sss(self):
+        stream_idx = [1, 1, 1]
         rng = mrg.MRG32k3a()
-        rng.start_fixed_s_ss_sss([1, 1, 1])
+        rng.start_fixed_s_ss_sss(stream_idx)
         rng2 = mrg.MRG32k3a()
         rng2.advance_stream()
+        self.__check_next_rand(rng2, [1, 0, 0])
         rng2.advance_substream()
+        self.__check_next_rand(rng2, [1, 1, 0])
         rng2.advance_subsubstream()
+        self.__check_next_rand(rng2, [1, 1, 1])
+        rng2.reset_subsubstream()
         self.assertEqual(rng._current_state, rng2._current_state)
         self.assertEqual(rng.stream_start, rng2.stream_start)
         self.assertEqual(rng.substream_start, rng2.substream_start)
         self.assertEqual(rng.subsubstream_start, rng2.subsubstream_start)
         self.assertEqual(rng.s_ss_sss_index, rng2.s_ss_sss_index)
+        self.__check_next_rand(rng, stream_idx)
 
 
 class TestBSM(unittest.TestCase):
