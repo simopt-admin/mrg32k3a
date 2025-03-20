@@ -130,16 +130,15 @@ class TestStreams(unittest.TestCase):
 
     next_rand = {
         (0, 0, 0): 0.12701112204657714,
-        (0, 0, 1): 0.522233116585875,
-        (0, 0, 10): 0.8947632701859717,
-        (0, 1, 0): 0.22024540691893657,
-        (0, 1, 1): 0.43552150707423537,
-        (0, 10, 0): 0.8966772306032628,
-        (1, 0, 0): 0.2652107696430385,
-        (1, 0, 1): 0.3091860155832701,
-        (1, 1, 0): 0.691769288593906,
-        (1, 1, 1): 0.8285534112572459,
-        (10, 0, 0): 0.2089612207989986,
+        (0, 0, 1): 0.1981528990938801,
+        (0, 0, 10): 0.14034946942531729,
+        (0, 1, 0): 0.07661060219048645,
+        (0, 1, 1): 0.6410743580999473,
+        (0, 10, 0): 0.1041233145300414,
+        (1, 0, 0): 0.35183402690605203,
+        (1, 1, 0): 0.9128064636289478,
+        (1, 1, 1): 0.036327319116350815,
+        (10, 0, 0): 0.8579536770597018,
     }
 
     def __check_next_rand(self, rng: mrg.MRG32k3a, index: list[int]):
@@ -386,6 +385,9 @@ class TestBSM(unittest.TestCase):
 
 
 class TestVariates(unittest.TestCase):
+    # TODO: come up with a better way of testing non-normal distributions
+    # without hardcoding values for mean and std
+
     def setUp(self):
         self.rng = mrg.MRG32k3a()
         # Make sure we're getting a "fresh" RNG
