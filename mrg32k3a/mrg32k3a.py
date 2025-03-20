@@ -30,12 +30,8 @@ mrga13n = -810728
 mrga21 = 527612
 mrga23n = -1370589
 
-A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga13n, mrga12, 0]])
-A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrga23n, 0, mrga21]])
-
 # These need to be object-types to avoid overflow errors
 # (Python's int type has arbitrary precision)
-# TODO: verify these values
 A1p47 = np.array(
     [
         [1362557480, 3230022138, 4278720212],

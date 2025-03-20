@@ -620,5 +620,49 @@ class TestVectors(unittest.TestCase):
         self.assertTrue(all(x > 0 for x in result))
 
 
+class TestAxpxx(unittest.TestCase):
+    # Old method of calculating A1p47, A2p47, A1p94, A2p94, A1p141, A2p141
+    # No longer needed since we precomputed and stored them in mrg32k3a.py,
+    # but kept here to verify the results are the same
+    @staticmethod
+    def _power_mod(a: np.ndarray, j: int, m: float) -> np.ndarray:
+        b = np.eye(3, dtype=np.int64)
+        while j > 0:
+            if j & 1:
+                b = (a @ b) % m
+            a = (a @ a) % m
+            j //= 2
+        return b
+
+    # These need to be object-types to avoid overflow errors
+    # (Python's int type has arbitrary precision)
+    A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrg.mrga13n, mrg.mrga12, 0]], dtype=object)
+    A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrg.mrga23n, 0, mrg.mrga21]], dtype=object)
+
+    def test_a1p47(self):
+        a1p47 = self._power_mod(self.A1p0, 2**47, mrg.mrgm1)
+        self.assertTrue(np.array_equal(a1p47, mrg.A1p47))
+
+    def test_a2p47(self):
+        a2p47 = self._power_mod(self.A2p0, 2**47, mrg.mrgm2)
+        self.assertTrue(np.array_equal(a2p47, mrg.A2p47))
+
+    def test_a1p94(self):
+        a1p94 = self._power_mod(self.A1p0, 2**94, mrg.mrgm1)
+        self.assertTrue(np.array_equal(a1p94, mrg.A1p94))
+
+    def test_a2p94(self):
+        a2p94 = self._power_mod(self.A2p0, 2**94, mrg.mrgm2)
+        self.assertTrue(np.array_equal(a2p94, mrg.A2p94))
+
+    def test_a1p141(self):
+        a1p141 = self._power_mod(self.A1p0, 2**141, mrg.mrgm1)
+        self.assertTrue(np.array_equal(a1p141, mrg.A1p141))
+
+    def test_a2p141(self):
+        a2p141 = self._power_mod(self.A2p0, 2**141, mrg.mrgm2)
+        self.assertTrue(np.array_equal(a2p141, mrg.A2p141))
+
+
 if __name__ == "__main__":
     unittest.main()
