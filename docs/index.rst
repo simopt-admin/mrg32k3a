@@ -20,13 +20,6 @@ The `mrg32k3a <https://mrg32k3a.readthedocs.io/en/latest/mrg32k3a.html#module-mr
 
 * The ``reset_stream``, ``reset_substream``, and ``reset_subsubstream`` functions reset the generator to the start of the current stream, substream, or subsubstream, respectively.
 
-The `matmodops <https://mrg32k3a.readthedocs.io/en/latest/mrg32k3a.html#module-mrg32k3a.matmodops>`_ module includes basic matrix/modulus operations used by the ``mrg32k3a`` module.
-
-Documentation
--------------
-Full documentation for the `mrg32k3a <https://mrg32k3a.readthedocs.io/en/latest/mrg32k3a.html#module-mrg32k3a.mrg32k3a>`_ and `matmodops <https://mrg32k3a.readthedocs.io/en/latest/mrg32k3a.html#module-mrg32k3a.matmodops>`_ modules.
-
-
 References
 ----------
 * Cooper, Kyle and Susan R. Hunter (2020). `"PyMOSO: Software for multi-objective simulation optimization with R-PERLE and R-MinRLE." <https://pubsonline.informs.org/doi/10.1287/ijoc.2019.0902>`_ *INFORMS Journal on Computing* 32(4): 1101-1108.
