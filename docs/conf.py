@@ -22,7 +22,7 @@ import sys
 
 from sphinx.ext.apidoc import main
 
-sys.path.insert(0, os.path.abspath("../src"))
+sys.path.insert(0, os.path.abspath(".."))
 
 
 # -- Project information -----------------------------------------------------
@@ -81,4 +81,4 @@ latex_engine = "xelatex"
 # html_static_path = ['_static']
 html_static_path = []
 
-main(["-o", os.path.abspath("."), os.path.abspath("../src"), "-f"])
+main(["-o", os.path.abspath("."), os.path.abspath(".."), "-f"])

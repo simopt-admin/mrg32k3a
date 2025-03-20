@@ -16,4 +16,4 @@ __pycache__/
 .vscode/
 
 # Documentation
-src/mrg23k3a/docs/_build/
+docs/_build/
