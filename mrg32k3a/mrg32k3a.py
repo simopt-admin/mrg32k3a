@@ -155,18 +155,16 @@ def bsm(u: float) -> float:
         Corresponding quantile of the standard normal distribution.
 
     """
-    if u <= 0 or u >= 1:
+    if not 0 < u < 1:
         raise ValueError("Argument must be in (0, 1).")
     y = u - 0.5
+    # Approximate from the center (Beasly-Springer 1977).
     if abs(y) < 0.42:
-        # Approximate from the center (Beasly-Springer 1977).
         r = y * y
-        return y * float(polyval(r, bsma) / polyval(r, bsmb))
-    else:
-        # Approximate from the tails (Moro 1995).
-        signum = -1 if y < 0 else 1
-        r = u if y < 0 else 1 - u
-        return signum * float(polyval(np.log(-np.log(r)), bsmc))
+        return (y * polyval(r, bsma) / polyval(r, bsmb)).item()
+    # Approximate from the tails (Moro 1995).
+    r = u if y < 0 else 1 - u
+    return (np.sign(y) * polyval(np.log(-np.log(r)), bsmc)).item()
 
 
 class MRG32k3a(random.Random):
