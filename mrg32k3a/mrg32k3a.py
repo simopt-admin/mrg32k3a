@@ -304,7 +304,6 @@ class MRG32k3a(random.Random):
 
         """
         self._current_state, u = self.generate(self._current_state)
-        self.seed(self._current_state)
         return float(u)
 
     def get_current_state(self) -> tuple[int, int, int, int, int, int]:
@@ -414,7 +413,10 @@ class MRG32k3a(random.Random):
         """
         if lmbda >= 35:
             return max(
-                int(np.ceil(lmbda + np.sqrt(lmbda) * self.normalvariate() - 0.5)), 0
+                np.ceil(lmbda + np.sqrt(lmbda) * self.normalvariate() - 0.5)
+                .astype(int)
+                .item(),
+                0,
             )
         n = 0
         p = self.random()
@@ -442,7 +444,7 @@ class MRG32k3a(random.Random):
             Gumbel random variate from the specified distribution.
 
         """
-        return float(mu - beta * np.log(-np.log(self.random())))
+        return (mu - beta * np.log(-np.log(self.random()))).item()
 
     def binomialvariate(self, n: int, p: float) -> int:
         """Generate a Binomial(n, p) random variate.
@@ -460,7 +462,11 @@ class MRG32k3a(random.Random):
             Binomial random variate from the specified distribution.
 
         """
-        return int(np.sum(self.choices(population=[0, 1], weights=[1 - p, p], k=n)))
+        return (
+            np.sum(self.choices(population=[0, 1], weights=[1 - p, p], k=n))
+            .astype(int)
+            .item()
+        )
 
     def integer_random_vector_from_simplex(
         self, n_elements: int, summation: int, with_zero: bool = False
@@ -522,7 +528,7 @@ class MRG32k3a(random.Random):
             sum up to (or less than or equal to) ``summation``.
 
         """
-        if exact_sum is True:
+        if exact_sum:
             # Generate a vector of length n_elements of i.i.d. Exponential(1)
             # random variates. Normalize all values by the sum and multiply by
             # "summation".
@@ -549,74 +555,62 @@ class MRG32k3a(random.Random):
 
         Streams are of length 2**141.
         """
-        state = np.array(self.stream_start)
-        # Split the state into 2 components of length 3.
-        st1 = state[0:3]
-        st2 = state[3:6]
         # Efficiently advance state -> A*s % m for both state parts.
-        nst1 = (A1p141 @ st1) % mrgm1
-        nst2 = (A2p141 @ st2) % mrgm2
+        nst1 = (A1p141 @ self.stream_start[0:3]) % mrgm1
+        nst2 = (A2p141 @ self.stream_start[3:6]) % mrgm2
         # Combine the 2 components into a single state.
-        nstate = tuple(np.hstack((nst1, nst2)))
-        self.seed(nstate)
+        nstate = np.hstack((nst1, nst2))
+        # Update state
+        self.seed(tuple(nstate))
+        self.stream_start = nstate
+        self.substream_start = nstate
+        self.subsubstream_start = nstate
         # Increment the stream index.
         self.s_ss_sss_index[0] += 1
         # Reset index for substream and subsubstream.
         self.s_ss_sss_index[1] = 0
         self.s_ss_sss_index[2] = 0
-        # Update state referencing.
-        self.stream_start = nstate
-        self.substream_start = nstate
-        self.subsubstream_start = nstate
 
     def advance_substream(self) -> None:
         """Advance the state of the generator to the start of the next substream.
 
         Substreams are of length 2**94.
         """
-        state = np.array(self.substream_start)
-        # Split the state into 2 components of length 3.
-        st1 = state[0:3]
-        st2 = state[3:6]
         # Efficiently advance state -> A*s % m for both state parts.
-        nst1 = (A1p94 @ st1) % mrgm1
-        nst2 = (A2p94 @ st2) % mrgm2
+        nst1 = (A1p94 @ self.substream_start[0:3]) % mrgm1
+        nst2 = (A2p94 @ self.substream_start[3:6]) % mrgm2
         # Combine the 2 components into a single state.
-        nstate = tuple(np.hstack((nst1, nst2)))
-        self.seed(nstate)
+        nstate = np.hstack((nst1, nst2))
+        # Update state
+        self.seed(tuple(nstate))
+        self.substream_start = nstate
+        self.subsubstream_start = nstate
         # Increment the substream index.
         self.s_ss_sss_index[1] += 1
         # Reset index for subsubstream.
         self.s_ss_sss_index[2] = 0
-        # Update state referencing.
-        self.substream_start = nstate
-        self.subsubstream_start = nstate
 
     def advance_subsubstream(self) -> None:
         """Advance the state of the generator to the start of the next subsubstream.
 
         Subsubstreams are of length 2**47.
         """
-        state = np.array(self.subsubstream_start)
-        # Split the state into 2 components of length 3.
-        st1 = state[0:3]
-        st2 = state[3:6]
         # Efficiently advance state -> A*s % m for both state parts.
-        nst1 = (A1p47 @ st1) % mrgm1
-        nst2 = (A2p47 @ st2) % mrgm2
+        nst1 = (A1p47 @ self.subsubstream_start[0:3]) % mrgm1
+        nst2 = (A2p47 @ self.subsubstream_start[3:6]) % mrgm2
         # Combine the 2 components into a single state.
-        nstate = tuple(np.hstack((nst1, nst2)))
-        self.seed(nstate)
+        nstate = np.hstack((nst1, nst2))
+        # Update state
+        self.seed(tuple(nstate))
+        self.subsubstream_start = nstate
         # Increment the subsubstream index.
         self.s_ss_sss_index[2] += 1
-        # Update state referencing.
-        self.subsubstream_start = nstate
 
     def reset_stream(self) -> None:
         """Reset the state of the generator to the start of the current stream."""
         nstate = self.stream_start
-        self.seed(nstate)
-        # Update state referencing.
+        # Update state
+        self.seed(tuple(nstate))
         self.substream_start = nstate
         self.subsubstream_start = nstate
         # Reset index for substream and subsubstream.
@@ -626,7 +620,7 @@ class MRG32k3a(random.Random):
     def reset_substream(self) -> None:
         """Reset the state of the generator to the start of the current substream."""
         nstate = self.substream_start
-        self.seed(nstate)
+        self.seed(tuple(nstate))
         # Update state referencing.
         self.subsubstream_start = nstate
         # Reset index for subsubstream.
@@ -634,7 +628,7 @@ class MRG32k3a(random.Random):
 
     def reset_subsubstream(self) -> None:
         """Reset the state of the generator to the start of the current subsubstream."""
-        self.seed(self.subsubstream_start)
+        self.seed(tuple(self.subsubstream_start))
 
     def start_fixed_s_ss_sss(self, s_ss_sss_triplet: list[int]) -> None:
         """Set the rng to the start of a specified (stream, substream, subsubstream) triplet.
@@ -651,30 +645,27 @@ class MRG32k3a(random.Random):
         subsubstream = s_ss_sss_triplet[2]
         # Start from the reference seed.
         state = np.array(self.ref_seed)
-        # Split the reference seed into 2 components of length 3.
-        st1 = state[0:3]
-        st2 = state[3:6]
         # Advance to start of specified stream.
         # Efficiently advance state -> A*s % m for both state parts.
         power_mod_1 = matrix_power(A1p141, stream) % mrgm1
         power_mod_2 = matrix_power(A2p141, stream) % mrgm2
-        st1 = (power_mod_1 @ st1) % mrgm1
-        st2 = (power_mod_2 @ st2) % mrgm2
-        self.stream_start = tuple(np.hstack((st1, st2)))
+        st1 = (power_mod_1 @ state[0:3]) % mrgm1
+        st2 = (power_mod_2 @ state[3:6]) % mrgm2
+        self.stream_start = np.hstack((st1, st2))
         # Advance to start of specified substream.
         # Efficiently advance state -> A*s % m for both state parts.
         power_mod_1 = matrix_power(A1p94, substream) % mrgm1
         power_mod_2 = matrix_power(A2p94, substream) % mrgm2
         st1 = (power_mod_1 @ st1) % mrgm1
         st2 = (power_mod_2 @ st2) % mrgm2
-        self.substream_start = tuple(np.hstack((st1, st2)))
+        self.substream_start = np.hstack((st1, st2))
         # Advance to start of specified subsubstream.
         # Efficiently advance state -> A*s % m for both state parts.
         power_mod_1 = matrix_power(A1p47, subsubstream) % mrgm1
         power_mod_2 = matrix_power(A2p47, subsubstream) % mrgm2
         st1 = (power_mod_1 @ st1) % mrgm1
         st2 = (power_mod_2 @ st2) % mrgm2
-        self.subsubstream_start = tuple(np.hstack((st1, st2)))
-        self.seed(self.subsubstream_start)
+        self.subsubstream_start = np.hstack((st1, st2))
+        self.seed(tuple(self.subsubstream_start))
         # Update index referencing.
         self.s_ss_sss_index = s_ss_sss_triplet

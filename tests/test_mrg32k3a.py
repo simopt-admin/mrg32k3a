@@ -154,9 +154,12 @@ class TestStreams(unittest.TestCase):
         stream_idx2 = [1, 0, 0]
         rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, rng._current_state)
-        self.assertEqual(rng.substream_start, rng._current_state)
-        self.assertEqual(rng.subsubstream_start, rng._current_state)
+        self.assertTrue(np.array_equal(rng.stream_start, rng2.stream_start))
+        self.assertTrue(np.array_equal(rng.substream_start, rng2.substream_start))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng2.subsubstream_start))
+        self.assertTrue(np.array_equal(rng.stream_start, rng._current_state))
+        self.assertTrue(np.array_equal(rng.substream_start, rng._current_state))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng._current_state))
 
         self.assertEqual(rng.s_ss_sss_index, stream_idx2)
         self.__check_next_rand(rng, stream_idx2)
@@ -171,9 +174,12 @@ class TestStreams(unittest.TestCase):
         stream_idx2 = [10, 0, 0]
         rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, rng._current_state)
-        self.assertEqual(rng.substream_start, rng._current_state)
-        self.assertEqual(rng.subsubstream_start, rng._current_state)
+        self.assertTrue(np.array_equal(rng.stream_start, rng._current_state))
+        self.assertTrue(np.array_equal(rng.substream_start, rng._current_state))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng._current_state))
+        self.assertTrue(np.array_equal(rng.stream_start, rng2.stream_start))
+        self.assertTrue(np.array_equal(rng.substream_start, rng2.substream_start))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng2.subsubstream_start))
 
         self.assertEqual(rng.s_ss_sss_index, stream_idx2)
         self.__check_next_rand(rng, stream_idx2)
@@ -187,9 +193,9 @@ class TestStreams(unittest.TestCase):
         stream_idx2 = [0, 1, 0]
         rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, self.seed)
-        self.assertEqual(rng.substream_start, rng._current_state)
-        self.assertEqual(rng.subsubstream_start, rng._current_state)
+        self.assertTrue(np.array_equal(rng.stream_start, self.seed))
+        self.assertTrue(np.array_equal(rng.substream_start, rng._current_state))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng._current_state))
 
         self.assertEqual(rng.s_ss_sss_index, stream_idx2)
         self.__check_next_rand(rng, stream_idx2)
@@ -204,9 +210,9 @@ class TestStreams(unittest.TestCase):
         stream_idx2 = [0, 10, 0]
         rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, self.seed)
-        self.assertEqual(rng.substream_start, rng._current_state)
-        self.assertEqual(rng.subsubstream_start, rng._current_state)
+        self.assertTrue(np.array_equal(rng.stream_start, self.seed))
+        self.assertTrue(np.array_equal(rng.substream_start, rng._current_state))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng._current_state))
 
         self.assertEqual(rng.s_ss_sss_index, stream_idx2)
         self.__check_next_rand(rng, stream_idx2)
@@ -220,11 +226,11 @@ class TestStreams(unittest.TestCase):
         stream_idx2 = [0, 0, 1]
         rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, self.seed)
-        self.assertEqual(rng.substream_start, self.seed)
-        self.assertEqual(rng.subsubstream_start, rng._current_state)
-        self.assertEqual(rng.s_ss_sss_index, stream_idx2)
+        self.assertTrue(np.array_equal(rng.stream_start, self.seed))
+        self.assertTrue(np.array_equal(rng.substream_start, self.seed))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng._current_state))
 
+        self.assertEqual(rng.s_ss_sss_index, stream_idx2)
         self.__check_next_rand(rng, stream_idx2)
 
     def test_advance_subsubstream_10(self):
@@ -237,9 +243,9 @@ class TestStreams(unittest.TestCase):
         stream_idx2 = [0, 0, 10]
         rng2 = mrg.MRG32k3a(s_ss_sss_index=stream_idx2)
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, self.seed)
-        self.assertEqual(rng.substream_start, self.seed)
-        self.assertEqual(rng.subsubstream_start, rng._current_state)
+        self.assertTrue(np.array_equal(rng.stream_start, self.seed))
+        self.assertTrue(np.array_equal(rng.substream_start, self.seed))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng._current_state))
 
         self.assertEqual(rng.s_ss_sss_index, stream_idx2)
         self.__check_next_rand(rng, stream_idx2)
@@ -250,9 +256,9 @@ class TestStreams(unittest.TestCase):
         self.__check_next_rand(rng, stream_idx)
 
         rng.reset_stream()
-        self.assertEqual(rng.stream_start, rng._current_state)
-        self.assertEqual(rng.substream_start, rng._current_state)
-        self.assertEqual(rng.subsubstream_start, rng._current_state)
+        self.assertTrue(np.array_equal(rng.stream_start, rng._current_state))
+        self.assertTrue(np.array_equal(rng.substream_start, rng._current_state))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng._current_state))
 
         stream_idx2 = [1, 0, 0]
         self.assertEqual(rng.s_ss_sss_index, stream_idx2)
@@ -262,7 +268,7 @@ class TestStreams(unittest.TestCase):
 
         rng3 = mrg.MRG32k3a()
         rng3.advance_stream()
-        self.assertEqual(rng.stream_start, rng3._current_state)
+        self.assertTrue(np.array_equal(rng.stream_start, rng3._current_state))
         self.__check_next_rand(rng3, stream_idx2)
 
         self.__check_next_rand(rng, stream_idx2)
@@ -281,9 +287,9 @@ class TestStreams(unittest.TestCase):
 
         stream_idx3 = [1, 0, 0]
         rng3 = mrg.MRG32k3a(s_ss_sss_index=stream_idx3)
-        self.assertEqual(rng.stream_start, rng3._current_state)
-        self.assertEqual(rng.substream_start, rng._current_state)
-        self.assertEqual(rng.subsubstream_start, rng._current_state)
+        self.assertTrue(np.array_equal(rng.stream_start, rng3._current_state))
+        self.assertTrue(np.array_equal(rng.substream_start, rng._current_state))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng._current_state))
 
     def test_reset_subsubstream(self):
         stream_idx = [1, 1, 1]
@@ -298,9 +304,9 @@ class TestStreams(unittest.TestCase):
         rng3 = mrg.MRG32k3a(s_ss_sss_index=stream_idx3)
         stream_idx4 = [1, 1, 0]
         rng4 = mrg.MRG32k3a(s_ss_sss_index=stream_idx4)
-        self.assertEqual(rng.stream_start, rng3._current_state)
-        self.assertEqual(rng.substream_start, rng4._current_state)
-        self.assertEqual(rng.subsubstream_start, rng._current_state)
+        self.assertTrue(np.array_equal(rng.stream_start, rng3._current_state))
+        self.assertTrue(np.array_equal(rng.substream_start, rng4._current_state))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng._current_state))
         self.assertEqual(rng.s_ss_sss_index, stream_idx2)
         self.__check_next_rand(rng, stream_idx2)
         self.__check_next_rand(rng2, stream_idx2)
@@ -313,9 +319,9 @@ class TestStreams(unittest.TestCase):
         rng2 = mrg.MRG32k3a()
         rng2.start_fixed_s_ss_sss(stream_idx)
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, rng2.stream_start)
-        self.assertEqual(rng.substream_start, rng2.substream_start)
-        self.assertEqual(rng.subsubstream_start, rng2.subsubstream_start)
+        self.assertTrue(np.array_equal(rng.stream_start, rng2.stream_start))
+        self.assertTrue(np.array_equal(rng.substream_start, rng2.substream_start))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng2.subsubstream_start))
         self.assertEqual(rng.s_ss_sss_index, rng2.s_ss_sss_index)
         self.__check_next_rand(rng, stream_idx)
         self.__check_next_rand(rng2, stream_idx)
@@ -333,9 +339,9 @@ class TestStreams(unittest.TestCase):
         self.__check_next_rand(rng2, [1, 1, 1])
         rng2.reset_subsubstream()
         self.assertEqual(rng._current_state, rng2._current_state)
-        self.assertEqual(rng.stream_start, rng2.stream_start)
-        self.assertEqual(rng.substream_start, rng2.substream_start)
-        self.assertEqual(rng.subsubstream_start, rng2.subsubstream_start)
+        self.assertTrue(np.array_equal(rng.stream_start, rng2.stream_start))
+        self.assertTrue(np.array_equal(rng.substream_start, rng2.substream_start))
+        self.assertTrue(np.array_equal(rng.subsubstream_start, rng2.subsubstream_start))
         self.assertEqual(rng.s_ss_sss_index, rng2.s_ss_sss_index)
         self.__check_next_rand(rng, stream_idx)
 
