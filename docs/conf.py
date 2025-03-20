@@ -20,14 +20,16 @@
 import os
 import sys
 
+from sphinx.ext.apidoc import main
+
 sys.path.insert(0, os.path.abspath("../src"))
 
 
 # -- Project information -----------------------------------------------------
 
 project = "mrg32k3a"
-copyright = "2025, David Eckman, Shane Henderson, and Sara Shashaani"
-author = "David Eckman, Shane Henderson, and Sara Shashaani"
+copyright = "2025, simopt-admin"
+author = "simopt-admin"
 
 # The full version, including alpha/beta/rc tags
 release = "1.1.0"
@@ -78,7 +80,5 @@ latex_engine = "xelatex"
 
 # html_static_path = ['_static']
 html_static_path = []
-
-from sphinx.ext.apidoc import main
 
 main(["-o", os.path.abspath("."), os.path.abspath("../src"), "-f"])

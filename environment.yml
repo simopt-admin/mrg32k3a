@@ -1,0 +1,6 @@
+name: mrg32k3a
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.8
+  - numpy
