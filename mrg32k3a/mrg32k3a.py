@@ -646,10 +646,27 @@ class MRG32k3a(random.Random):
         ----------
         s_ss_sss_triplet : list [int]
             Triplet of the indices of the current stream-substream-subsubstream.
-
         """
 
         def power_mod(a: np.ndarray, j: int, m: float) -> np.ndarray:
+            """Compute moduli of a 3 x 3 matrix power.
+
+            Use divide-and-conquer algorithm described in L'Ecuyer (1990).
+
+            Parameters
+            ----------
+            a : np.ndarray
+                3 x 3 matrix.
+            j : int
+                Exponent.
+            m : float
+                Modulus.
+
+            Returns
+            -------
+            np.ndarray
+                3 x 3 matrix.
+            """
             b = np.eye(3, dtype=object)
             while j > 0:
                 if j & 1:
@@ -661,7 +678,19 @@ class MRG32k3a(random.Random):
         def progress_state(
             a1: np.ndarray, a2: np.ndarray, stream: int, state: np.ndarray
         ) -> np.ndarray:
-            """Efficiently advance state -> A*s % m for both state parts."""
+            """Efficiently advance state -> A*s % m for both state parts.
+
+            Parameters
+            ----------
+            a1 : np.ndarray
+                First matrix to multiply the state by.
+            a2 : np.ndarray
+                Second matrix to multiply the state by.
+            stream : int
+                Stream index to which to advance.
+            state : np.ndarray
+                State to be advanced.
+            """
             a1pm = power_mod(a1, stream, mrgm1)
             a2pm = power_mod(a2, stream, mrgm2)
             return self._advance_state(a1pm, a2pm, state)
