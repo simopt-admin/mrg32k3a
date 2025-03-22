@@ -5,12 +5,11 @@
 
 from __future__ import annotations
 
+import math
 import random
 from copy import deepcopy
 
 import numpy as np
-from numpy.linalg import matrix_power
-from numpy.polynomial.polynomial import polyval
 
 # Constants used in mrg32k3a and in substream generation.
 # P. L'Ecuyer, ``Good Parameter Sets for Combined Multiple Recursive Random Number Generators'',
@@ -83,25 +82,23 @@ A2p141 = np.array(
 
 # Constants used in Beasley-Springer-Moro algorithm for approximating
 # the inverse cdf of the standard normal distribution.
-bsma = np.array(
-    [2.50662823884, -18.61500062529, 41.39119773534, -25.44106049637],
-)
-bsmb = np.array(
-    [1, -8.47351093090, 23.08336743743, -21.06224101826, 3.13082909833],
-)
-bsmc = np.array(
-    [
-        0.3374754822726147,
-        0.9761690190917186,
-        0.1607979714918209,
-        0.0276438810333863,
-        0.0038405729373609,
-        0.0003951896511919,
-        0.0000321767881768,
-        0.0000002888167364,
-        0.0000003960315187,
-    ],
-)
+bsma = [2.50662823884, -18.61500062529, 41.39119773534, -25.44106049637]
+bsmb = [1, -8.47351093090, 23.08336743743, -21.06224101826, 3.13082909833]
+bsmc = [
+    0.3374754822726147,
+    0.9761690190917186,
+    0.1607979714918209,
+    0.0276438810333863,
+    0.0038405729373609,
+    0.0003951896511919,
+    0.0000321767881768,
+    0.0000002888167364,
+    0.0000003960315187,
+]
+
+
+def _neg_log_log(x: float) -> float:
+    return math.log(-math.log(x))
 
 
 # Adapted to pure Python from the P. L'Ecuyer code referenced above.
@@ -151,16 +148,25 @@ def bsm(u: float) -> float:
         Corresponding quantile of the standard normal distribution.
 
     """
+
+    def horner(x: float, coeffs: list[float]) -> float:
+        result = 0.0
+        for c in reversed(coeffs):
+            result = result * x + c
+        return result
+
     if not 0 < u < 1:
         raise ValueError("Argument must be in (0, 1).")
     y = u - 0.5
     # Approximate from the center (Beasly-Springer 1977).
     if abs(y) < 0.42:
         r = y * y
-        return (y * polyval(r, bsma) / polyval(r, bsmb)).item()
+        return y * horner(r, bsma) / horner(r, bsmb)
     # Approximate from the tails (Moro 1995).
     r = u if y < 0 else 1 - u
-    return (np.sign(y) * polyval(np.log(-np.log(r)), bsmc)).item()
+    s = _neg_log_log(r)
+    sign = -1 if y < 0 else 1
+    return sign * horner(s, bsmc)
 
 
 class MRG32k3a(random.Random):
@@ -357,9 +363,9 @@ class MRG32k3a(random.Random):
         """
         if lq <= 0 or uq <= 0:
             raise ValueError("Quantiles must be greater than 0.")
-        log_uq = np.log(uq)
-        mu = (np.log(lq) + log_uq) / 2
-        return np.exp(self.normalvariate(mu, (log_uq - mu) / 1.96))
+        log_uq = math.log(uq)
+        mu = (math.log(lq) + log_uq) / 2
+        return math.exp(self.normalvariate(mu, (log_uq - mu) / 1.96))
 
     def mvnormalvariate(
         self,
@@ -413,14 +419,12 @@ class MRG32k3a(random.Random):
         """
         if lmbda >= 35:
             return max(
-                np.ceil(lmbda + np.sqrt(lmbda) * self.normalvariate() - 0.5)
-                .astype(int)
-                .item(),
+                math.ceil(lmbda + math.sqrt(lmbda) * self.normalvariate() - 0.5),
                 0,
             )
         n = 0
         p = self.random()
-        threshold = np.exp(-lmbda)
+        threshold = math.exp(-lmbda)
         while p >= threshold:
             p *= self.random()
             n += 1
@@ -444,7 +448,7 @@ class MRG32k3a(random.Random):
             Gumbel random variate from the specified distribution.
 
         """
-        return (mu - beta * np.log(-np.log(self.random()))).item()
+        return mu - beta * _neg_log_log(self.random())
 
     def binomialvariate(self, n: int, p: float) -> int:
         """Generate a Binomial(n, p) random variate.
@@ -462,11 +466,7 @@ class MRG32k3a(random.Random):
             Binomial random variate from the specified distribution.
 
         """
-        return (
-            np.sum(self.choices(population=[0, 1], weights=[1 - p, p], k=n))
-            .astype(int)
-            .item()
-        )
+        return sum(self.choices(population=[0, 1], weights=[1 - p, p], k=n))
 
     def integer_random_vector_from_simplex(
         self, n_elements: int, summation: int, with_zero: bool = False
@@ -498,11 +498,9 @@ class MRG32k3a(random.Random):
 
         # Generate n_elements - 1 random integers in the range [1, adjusted_sum - 1].
         temp_x = sorted(self.sample(range(1, adjusted_sum), k=n_elements - 1))
-        vec = np.diff([0, *temp_x, adjusted_sum]).astype(int).tolist()
-
-        # Adjust the vector to account for the possibility of zeros.
-        if with_zero:
-            vec = [v - 1 for v in vec]
+        cut_points = [0] + temp_x + [adjusted_sum]
+        offset = int(with_zero)
+        vec = [(cut_points[i + 1] - cut_points[i]) - offset for i in range(n_elements)]
 
         return vec
 
@@ -550,16 +548,35 @@ class MRG32k3a(random.Random):
         # to get the convex combination of the vertices (scaled up to "summation").
         return (summation * diffs @ vertices).astype(float).tolist()
 
+    @staticmethod
+    def _advance_state(a: np.ndarray, b: np.ndarray, state: np.ndarray) -> np.ndarray:
+        """Efficiently advance state -> A*s % m for both state parts.
+
+        Parameters
+        ----------
+        a : np.ndarray
+            Matrix to multiply the state by.
+        b : np.ndarray
+            Matrix to multiply the state by.
+        state : np.ndarray
+            State to be advanced.
+
+        Returns
+        -------
+        np.ndarray
+            Advanced state.
+
+        """
+        new_state_a = (a @ state[:3]) % mrgm1
+        new_state_b = (b @ state[3:]) % mrgm2
+        return np.hstack((new_state_a, new_state_b))
+
     def advance_stream(self) -> None:
         """Advance the state of the generator to the start of the next stream.
 
         Streams are of length 2**141.
         """
-        # Efficiently advance state -> A*s % m for both state parts.
-        nst1 = (A1p141 @ self.stream_start[0:3]) % mrgm1
-        nst2 = (A2p141 @ self.stream_start[3:6]) % mrgm2
-        # Combine the 2 components into a single state.
-        nstate = np.hstack((nst1, nst2))
+        nstate = self._advance_state(A1p141, A2p141, self.stream_start)
         # Update state
         self.seed(tuple(nstate))
         self.stream_start = nstate
@@ -576,11 +593,7 @@ class MRG32k3a(random.Random):
 
         Substreams are of length 2**94.
         """
-        # Efficiently advance state -> A*s % m for both state parts.
-        nst1 = (A1p94 @ self.substream_start[0:3]) % mrgm1
-        nst2 = (A2p94 @ self.substream_start[3:6]) % mrgm2
-        # Combine the 2 components into a single state.
-        nstate = np.hstack((nst1, nst2))
+        nstate = self._advance_state(A1p94, A2p94, self.substream_start)
         # Update state
         self.seed(tuple(nstate))
         self.substream_start = nstate
@@ -595,11 +608,7 @@ class MRG32k3a(random.Random):
 
         Subsubstreams are of length 2**47.
         """
-        # Efficiently advance state -> A*s % m for both state parts.
-        nst1 = (A1p47 @ self.subsubstream_start[0:3]) % mrgm1
-        nst2 = (A2p47 @ self.subsubstream_start[3:6]) % mrgm2
-        # Combine the 2 components into a single state.
-        nstate = np.hstack((nst1, nst2))
+        nstate = self._advance_state(A1p47, A2p47, self.subsubstream_start)
         # Update state
         self.seed(tuple(nstate))
         self.subsubstream_start = nstate
@@ -639,33 +648,37 @@ class MRG32k3a(random.Random):
             Triplet of the indices of the current stream-substream-subsubstream.
 
         """
+
+        def power_mod(a: np.ndarray, j: int, m: float) -> np.ndarray:
+            b = np.eye(3, dtype=object)
+            while j > 0:
+                if j & 1:
+                    b = (a @ b) % m
+                a = (a @ a) % m
+                j //= 2
+            return b
+
+        def progress_state(
+            a1: np.ndarray, a2: np.ndarray, stream: int, state: np.ndarray
+        ) -> np.ndarray:
+            """Efficiently advance state -> A*s % m for both state parts."""
+            a1pm = power_mod(a1, stream, mrgm1)
+            a2pm = power_mod(a2, stream, mrgm2)
+            return self._advance_state(a1pm, a2pm, state)
+
         # Grab the stream, substream, and subsubstream indices.
-        stream = s_ss_sss_triplet[0]
-        substream = s_ss_sss_triplet[1]
-        subsubstream = s_ss_sss_triplet[2]
-        # Start from the reference seed.
-        state = np.array(self.ref_seed)
+        stream, substream, subsubstream = s_ss_sss_triplet
         # Advance to start of specified stream.
-        # Efficiently advance state -> A*s % m for both state parts.
-        power_mod_1 = matrix_power(A1p141, stream) % mrgm1
-        power_mod_2 = matrix_power(A2p141, stream) % mrgm2
-        st1 = (power_mod_1 @ state[0:3]) % mrgm1
-        st2 = (power_mod_2 @ state[3:6]) % mrgm2
-        self.stream_start = np.hstack((st1, st2))
-        # Advance to start of specified substream.
-        # Efficiently advance state -> A*s % m for both state parts.
-        power_mod_1 = matrix_power(A1p94, substream) % mrgm1
-        power_mod_2 = matrix_power(A2p94, substream) % mrgm2
-        st1 = (power_mod_1 @ st1) % mrgm1
-        st2 = (power_mod_2 @ st2) % mrgm2
-        self.substream_start = np.hstack((st1, st2))
-        # Advance to start of specified subsubstream.
-        # Efficiently advance state -> A*s % m for both state parts.
-        power_mod_1 = matrix_power(A1p47, subsubstream) % mrgm1
-        power_mod_2 = matrix_power(A2p47, subsubstream) % mrgm2
-        st1 = (power_mod_1 @ st1) % mrgm1
-        st2 = (power_mod_2 @ st2) % mrgm2
-        self.subsubstream_start = np.hstack((st1, st2))
+        self.stream_start = progress_state(
+            A1p141, A2p141, stream, np.array(self.ref_seed)
+        )
+        self.substream_start = progress_state(
+            A1p94, A2p94, substream, self.stream_start
+        )
+        self.subsubstream_start = progress_state(
+            A1p47, A2p47, subsubstream, self.substream_start
+        )
+        # Update state.
         self.seed(tuple(self.subsubstream_start))
         # Update index referencing.
         self.s_ss_sss_index = s_ss_sss_triplet
