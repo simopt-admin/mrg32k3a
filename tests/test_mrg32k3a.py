@@ -5,6 +5,7 @@ import sys
 import unittest
 
 import numpy as np
+from typing import List
 
 import mrg32k3a.mrg32k3a as mrg
 
@@ -73,8 +74,8 @@ class TestRandom(unittest.TestCase):
 class TestStates(unittest.TestCase):
     seed = (12345, 12345, 12345, 12345, 12345, 12345)
 
-    A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrg.mrga13n, mrg.mrga12, 0]])
-    A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrg.mrga23n, 0, mrg.mrga21]])
+    A1p0 = np.array([[0, 1, 0], [0, 0, 1], [mrg.mrga13n, mrg.mrga12, 0]], dtype=object)
+    A2p0 = np.array([[0, 1, 0], [0, 0, 1], [mrg.mrga23n, 0, mrg.mrga21]], dtype=object)
 
     def test_get_current_state(self):
         rng = mrg.MRG32k3a()
@@ -92,7 +93,9 @@ class TestStates(unittest.TestCase):
         st2_mult = self.A2p0 @ self.seed[3:6]
         st2 = st2_mult % mrg.mrgm2
         state = np.hstack((st1, st2)).tolist()
-        self.assertSequenceEqual(rng._current_state, state)
+        exp_state = [12345, 12345, 3023790853, 12345, 12345, 2478282264]
+        self.assertSequenceEqual(state, exp_state, "Numpy state mismatch")
+        self.assertSequenceEqual(rng._current_state, state, "Python state mismatch")
 
     def test_third_state(self):
         rng = mrg.MRG32k3a()
@@ -104,8 +107,10 @@ class TestStates(unittest.TestCase):
         st1 = st1_mult % mrg.mrgm1
         st2_mult = A2sq @ self.seed[3:6]
         st2 = st2_mult % mrg.mrgm2
-        state = st1.tolist() + st2.tolist()
-        self.assertSequenceEqual(rng._current_state, state)
+        state = np.hstack((st1, st2)).tolist()
+        exp_state = [12345, 3023790853, 3023790853, 12345, 2478282264, 1655725443]
+        self.assertSequenceEqual(state, exp_state, "Numpy state mismatch")
+        self.assertSequenceEqual(rng._current_state, state, "Python state mismatch")
 
     def test_hundreth_state(self):
         # Cycle through 99 states so we're at the 100th
@@ -141,7 +146,7 @@ class TestStreams(unittest.TestCase):
         (10, 0, 0): 0.8579536770597018,
     }
 
-    def __check_next_rand(self, rng: mrg.MRG32k3a, index: list[int]):
+    def __check_next_rand(self, rng: mrg.MRG32k3a, index: List[int]):
         random = rng.random()
         self.assertEqual(random, self.next_rand[tuple(index)])
 
