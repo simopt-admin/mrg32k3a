@@ -162,9 +162,13 @@ def bsm(u: float) -> float:
         r = y * y
         return y * horner(r, bsma) / horner(r, bsmb)
     # Approximate from the tails (Moro 1995).
-    r = u if y < 0 else 1 - u
+    if y < 0:
+        r = u
+        sign = -1
+    else:
+        r = 1 - u
+        sign = 1
     s = _neg_log_log(r)
-    sign = -1 if y < 0 else 1
     return sign * horner(s, bsmc)
 
 
