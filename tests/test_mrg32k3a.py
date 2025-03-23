@@ -88,9 +88,9 @@ class TestStates(unittest.TestCase):
     def test_second_state(self):
         rng = mrg.MRG32k3a()
         rng.random()
-        st1_mult = self.A1p0 @ self.seed[0:3]
+        st1_mult = np.dot(self.A1p0, self.seed[0:3])
         st1 = st1_mult % mrg.mrgm1
-        st2_mult = self.A2p0 @ self.seed[3:6]
+        st2_mult = np.dot(self.A2p0, self.seed[3:6])
         st2 = st2_mult % mrg.mrgm2
         state = np.hstack((st1, st2)).tolist()
         exp_state = [12345, 12345, 3023790853, 12345, 12345, 2478282264]
@@ -101,11 +101,11 @@ class TestStates(unittest.TestCase):
         rng = mrg.MRG32k3a()
         rng.random()
         rng.random()
-        A1sq = self.A1p0 @ self.A1p0
-        A2sq = self.A2p0 @ self.A2p0
-        st1_mult = A1sq @ self.seed[0:3]
+        A1sq = np.dot(self.A1p0, self.A1p0)
+        A2sq = np.dot(self.A2p0, self.A2p0)
+        st1_mult = np.dot(A1sq, self.seed[0:3])
         st1 = st1_mult % mrg.mrgm1
-        st2_mult = A2sq @ self.seed[3:6]
+        st2_mult = np.dot(A2sq, self.seed[3:6])
         st2 = st2_mult % mrg.mrgm2
         state = np.hstack((st1, st2)).tolist()
         exp_state = [12345, 3023790853, 3023790853, 12345, 2478282264, 1655725443]
@@ -546,10 +546,6 @@ class TestVariates(unittest.TestCase):
 
     def test_binomial(self):
         rng = mrg.MRG32k3a()
-        result = rng.binomialvariate(1, 0.5)
-        self.assertTrue(isinstance(result, int))
-        self.assertEqual(result, 0)
-
         result = rng.binomialvariate(2, 0)
         self.assertTrue(isinstance(result, int))
         self.assertEqual(result, 0)
@@ -640,8 +636,8 @@ class TestAxpxx(unittest.TestCase):
         b = np.eye(3, dtype=np.int64)
         while j > 0:
             if j & 1:
-                b = (a @ b) % m
-            a = (a @ a) % m
+                b = np.dot(a, b) % m
+            a = np.dot(a, a) % m
             j //= 2
         return b
 

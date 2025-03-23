@@ -2,5 +2,5 @@ name: mrg32k3a
 channels:
   - conda-forge
 dependencies:
-  - python>=3.8
-  - numpy
+  - python>=3.5
+  - numpy>=1.15

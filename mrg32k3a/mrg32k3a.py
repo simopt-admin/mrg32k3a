@@ -3,11 +3,10 @@
 
 # Code largely adopted from PyMOSO repository (https://github.com/pymoso/PyMOSO).
 
-from __future__ import annotations
-
 import math
 import random
 from copy import deepcopy
+from typing import Optional, Tuple, List, Union
 
 import numpy as np
 
@@ -37,7 +36,7 @@ A1p47 = np.array(
         [3427386258, 3848976950, 3230022138],
         [2109817045, 2441486578, 3848976950],
     ],
-    dtype=object,
+    dtype=np.object_,
 )
 A2p47 = np.array(
     [
@@ -45,7 +44,7 @@ A2p47 = np.array(
         [2135250851, 2920112852, 969184056],
         [296035385, 2135250851, 4267827987],
     ],
-    dtype=object,
+    dtype=np.object_,
 )
 A1p94 = np.array(
     [
@@ -53,7 +52,7 @@ A1p94 = np.array(
         [4153800443, 1261269623, 2081104178],
         [3967600061, 1830023157, 1261269623],
     ],
-    dtype=object,
+    dtype=np.object_,
 )
 A2p94 = np.array(
     [
@@ -61,7 +60,7 @@ A2p94 = np.array(
         [4102191254, 1347291439, 878627148],
         [1293500383, 4102191254, 745646810],
     ],
-    dtype=object,
+    dtype=np.object_,
 )
 A1p141 = np.array(
     [
@@ -69,7 +68,7 @@ A1p141 = np.array(
         [2882890127, 4088518247, 2131723358],
         [3991553306, 1282224087, 4088518247],
     ],
-    dtype=object,
+    dtype=np.object_,
 )
 A2p141 = np.array(
     [
@@ -77,7 +76,7 @@ A2p141 = np.array(
         [4124675351, 2196438580, 2527961345],
         [94452540, 4124675351, 2825656399],
     ],
-    dtype=object,
+    dtype=np.object_,
 )
 
 # Constants used in Beasley-Springer-Moro algorithm for approximating
@@ -103,18 +102,18 @@ def _neg_log_log(x: float) -> float:
 
 # Adapted to pure Python from the P. L'Ecuyer code referenced above.
 def mrg32k3a(
-    state: tuple[int, int, int, int, int, int],
-) -> tuple[tuple[int, int, int, int, int, int], float]:
+    state: Tuple[int, int, int, int, int, int],
+) -> Tuple[Tuple[int, int, int, int, int, int], float]:
     """Generate a random number between 0 and 1 from a given state.
 
     Parameters
     ----------
-    state : tuple [int, int, int, int, int, int]
+    state : Tuple [int, int, int, int, int, int]
         Current state of the generator.
 
     Returns
     -------
-    tuple [int, int, int, int, int, int]
+    Tuple [int, int, int, int, int, int]
         Next state of the generator.
     float
         Pseudo uniform random variate.
@@ -149,7 +148,7 @@ def bsm(u: float) -> float:
 
     """
 
-    def horner(x: float, coeffs: list[float]) -> float:
+    def horner(x: float, coeffs: List[float]) -> float:
         result = 0.0
         for c in reversed(coeffs):
             result = result * x + c
@@ -179,13 +178,13 @@ class MRG32k3a(random.Random):
     ref_seed : tuple [int]
         Seed from which to start the generator.
         Streams/substreams/subsubstreams are referenced w.r.t. ``ref_seed``.
-    s_ss_sss_index : list [int]
+    s_ss_sss_index : List [int]
         Triplet of the indices of the current stream-substream-subsubstream.
-    stream_start : list [int]
+    stream_start : List [int]
         State corresponding to the start of the current stream.
-    substream_start: list [int]
+    substream_start: List [int]
         State corresponding to the start of the current substream.
-    subsubstream_start: list [int]
+    subsubstream_start: List [int]
         State corresponding to the start of the current subsubstream.
 
     See Also
@@ -196,7 +195,7 @@ class MRG32k3a(random.Random):
 
     def __init__(
         self,
-        ref_seed: tuple[int, int, int, int, int, int] = (
+        ref_seed: Tuple[int, int, int, int, int, int] = (
             12345,
             12345,
             12345,
@@ -204,7 +203,7 @@ class MRG32k3a(random.Random):
             12345,
             12345,
         ),
-        s_ss_sss_index: list[int] | None = None,
+        s_ss_sss_index: Optional[List[int]] = None,
     ) -> None:
         """Initialize the MRG32k3a generator.
 
@@ -212,7 +211,7 @@ class MRG32k3a(random.Random):
         ----------
         ref_seed : tuple [int, int, int, int, int, int], optional
             Seed from which to start the generator.
-        s_ss_sss_index : list [int], optional
+        s_ss_sss_index : List [int], optional
             Triplet of the indices of the stream-substream-subsubstream to start at.
 
         """
@@ -225,7 +224,7 @@ class MRG32k3a(random.Random):
             s_ss_sss_index = [0, 0, 0]
         self.start_fixed_s_ss_sss(s_ss_sss_index)
 
-    def __deepcopy__(self, memo: dict) -> MRG32k3a:
+    def __deepcopy__(self, memo: dict) -> "MRG32k3a":
         """Deepcopy the generator.
 
         Parameters
@@ -246,7 +245,7 @@ class MRG32k3a(random.Random):
             setattr(result, k, deepcopy(v, memo))
         return result
 
-    def seed(self, new_state: tuple[int, int, int, int, int, int]) -> None:
+    def seed(self, new_state: Tuple[int, int, int, int, int, int]) -> None:
         """Set the state (or seed) of the generator and update the generator state.
 
         Parameters
@@ -260,7 +259,7 @@ class MRG32k3a(random.Random):
 
     def getstate(
         self,
-    ) -> tuple[tuple[int, int, int, int, int, int], tuple]:
+    ) -> Tuple[Tuple[int, int, int, int, int, int], Tuple]:
         """Return the state of the generator.
 
         Returns
@@ -279,16 +278,16 @@ class MRG32k3a(random.Random):
 
     def setstate(
         self,
-        state: tuple[
-            tuple[int, int, int, int, int, int],
-            tuple,
+        state: Tuple[
+            Tuple[int, int, int, int, int, int],
+            Tuple,
         ],
     ) -> None:
         """Set the internal state of the generator.
 
         Parameters
         ----------
-        state : tuple[tuple[int, int, int, int, int, int], tuple]
+        state : Tuple[Tuple[int, int, int, int, int, int], Tuple]
             ``state[0]`` is new state for the generator.
             ``state[1]`` is ``random.Random.getstate()``.
 
@@ -312,12 +311,12 @@ class MRG32k3a(random.Random):
         self._current_state, u = self.generate(self._current_state)
         return float(u)
 
-    def get_current_state(self) -> tuple[int, int, int, int, int, int]:
+    def get_current_state(self) -> Tuple[int, int, int, int, int, int]:
         """Return the current state of the generator.
 
         Returns
         -------
-        tuple [int, int, int, int, int, int]
+        Tuple [int, int, int, int, int, int]
             Current state of the generator.
 
         """
@@ -369,18 +368,18 @@ class MRG32k3a(random.Random):
 
     def mvnormalvariate(
         self,
-        mean_vec: list[float],
-        cov: list[list[float]] | np.ndarray,
+        mean_vec: List[float],
+        cov: Union[List[List[float]], np.ndarray],
         factorized: bool = False,
-    ) -> list[float]:
+    ) -> List[float]:
         """Generate a normal random vector.
 
         Parameters
         ----------
-        mean_vec : list [float]
+        mean_vec : List [float]
             Location parameters of the multivariate normal distribution
             from which to generate.
-        cov : list [list [float]]
+        cov : List [List [float]]
             Covariance matrix of the multivariate normal distribution
             from which to generate.
         factorized : bool, default=False
@@ -390,7 +389,7 @@ class MRG32k3a(random.Random):
 
         Returns
         -------
-        list [float]
+        List [float]
             Multivariate normal random variate from the specified distribution.
 
         """
@@ -398,9 +397,8 @@ class MRG32k3a(random.Random):
             cov = np.array(cov)
         chol = np.linalg.cholesky(cov) if not factorized else cov
         observations = [self.normalvariate(0, 1) for _ in range(len(cov))]
-        return (
-            (np.dot(chol, observations).transpose() + mean_vec).astype(float).tolist()
-        )
+        result_array = np.dot(chol, observations).transpose() + mean_vec
+        return result_array.tolist()
 
     def poissonvariate(self, lmbda: float) -> int:
         """Generate a Poisson random variate.
@@ -466,11 +464,11 @@ class MRG32k3a(random.Random):
             Binomial random variate from the specified distribution.
 
         """
-        return sum(self.choices(population=[0, 1], weights=[1 - p, p], k=n))
+        return sum(self.random() < p for _ in range(n))
 
     def integer_random_vector_from_simplex(
         self, n_elements: int, summation: int, with_zero: bool = False
-    ) -> list[int]:
+    ) -> List[int]:
         """Generate a random vector with a specified number of non-negative integer elements that sum up to a specified number.
 
         Parameters
@@ -484,7 +482,7 @@ class MRG32k3a(random.Random):
 
         Returns
         -------
-        list [int]
+        List [int]
             A non-negative integer vector of length n_elements that sum to n_elements.
 
         """
@@ -506,7 +504,7 @@ class MRG32k3a(random.Random):
 
     def continuous_random_vector_from_simplex(
         self, n_elements: int, summation: float, exact_sum: bool = False
-    ) -> list[float]:
+    ) -> List[float]:
         """Generate a random vector with a specified number of non-negative real-valued elements that sum up to (or less than or equal to) a specified number.
 
         Parameters
@@ -521,7 +519,7 @@ class MRG32k3a(random.Random):
 
         Returns
         -------
-        list [float]
+        List [float]
             Vector of ``n_elements`` non-negative real-valued numbers that
             sum up to (or less than or equal to) ``summation``.
 
@@ -531,8 +529,8 @@ class MRG32k3a(random.Random):
             # random variates. Normalize all values by the sum and multiply by
             # "summation".
             exp_rvs = np.array([self.expovariate(lambd=1) for _ in range(n_elements)])
-            return (summation * exp_rvs / np.sum(exp_rvs)).astype(float).tolist()
-
+            result_array = summation * exp_rvs / np.sum(exp_rvs)
+            return result_array.tolist()
         # Follows Theorem 2.1 of "Non-Uniform Random Variate Generation" by DeVroye.
         # Chapter 11, page 568.
         # Generate a vector of length n_elements of i.i.d. Uniform(0, 1)
@@ -546,7 +544,8 @@ class MRG32k3a(random.Random):
         # Multiply each vertex by the corresponding term in diffs.
         # Then multiply each component by "summation" and sum the vectors
         # to get the convex combination of the vertices (scaled up to "summation").
-        return (summation * diffs @ vertices).astype(float).tolist()
+        result_array = np.dot(summation * diffs, vertices)
+        return result_array.tolist()
 
     @staticmethod
     def _advance_state(a: np.ndarray, b: np.ndarray, state: np.ndarray) -> np.ndarray:
@@ -567,8 +566,8 @@ class MRG32k3a(random.Random):
             Advanced state.
 
         """
-        new_state_a = (a @ state[:3]) % mrgm1
-        new_state_b = (b @ state[3:]) % mrgm2
+        new_state_a = np.dot(a, state[:3]) % mrgm1
+        new_state_b = np.dot(b, state[3:]) % mrgm2
         return np.hstack((new_state_a, new_state_b))
 
     def advance_stream(self) -> None:
@@ -639,12 +638,12 @@ class MRG32k3a(random.Random):
         """Reset the state of the generator to the start of the current subsubstream."""
         self.seed(tuple(self.subsubstream_start))
 
-    def start_fixed_s_ss_sss(self, s_ss_sss_triplet: list[int]) -> None:
+    def start_fixed_s_ss_sss(self, s_ss_sss_triplet: List[int]) -> None:
         """Set the rng to the start of a specified (stream, substream, subsubstream) triplet.
 
         Parameters
         ----------
-        s_ss_sss_triplet : list [int]
+        s_ss_sss_triplet : List [int]
             Triplet of the indices of the current stream-substream-subsubstream.
         """
 
@@ -670,8 +669,8 @@ class MRG32k3a(random.Random):
             b = np.eye(3, dtype=object)
             while j > 0:
                 if j & 1:
-                    b = (a @ b) % m
-                a = (a @ a) % m
+                    b = np.dot(a, b) % m
+                a = np.dot(a, a) % m
                 j //= 2
             return b
 
