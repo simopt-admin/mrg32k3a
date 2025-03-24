@@ -6,9 +6,16 @@
 import math
 import random
 from copy import deepcopy
-from typing import List, Optional, Tuple, Union
+import sys
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
+
+# Type hint for the seed parameter.
+if sys.version_info >= (3, 9):
+    SeedType = Union[int, float, str, bytes, bytearray, tuple, None]
+else:
+    SeedType = Union[Any]
 
 # Constants used in mrg32k3a and in substream generation.
 # P. L'Ecuyer, ``Good Parameter Sets for Combined Multiple Recursive Random Number Generators'',
@@ -36,7 +43,7 @@ A1p47 = np.array(
         [3427386258, 3848976950, 3230022138],
         [2109817045, 2441486578, 3848976950],
     ],
-    dtype=np.object_,
+    dtype=object,
 )
 A2p47 = np.array(
     [
@@ -44,7 +51,7 @@ A2p47 = np.array(
         [2135250851, 2920112852, 969184056],
         [296035385, 2135250851, 4267827987],
     ],
-    dtype=np.object_,
+    dtype=object,
 )
 A1p94 = np.array(
     [
@@ -52,7 +59,7 @@ A1p94 = np.array(
         [4153800443, 1261269623, 2081104178],
         [3967600061, 1830023157, 1261269623],
     ],
-    dtype=np.object_,
+    dtype=object,
 )
 A2p94 = np.array(
     [
@@ -60,7 +67,7 @@ A2p94 = np.array(
         [4102191254, 1347291439, 878627148],
         [1293500383, 4102191254, 745646810],
     ],
-    dtype=np.object_,
+    dtype=object,
 )
 A1p141 = np.array(
     [
@@ -68,7 +75,7 @@ A1p141 = np.array(
         [2882890127, 4088518247, 2131723358],
         [3991553306, 1282224087, 4088518247],
     ],
-    dtype=np.object_,
+    dtype=object,
 )
 A2p141 = np.array(
     [
@@ -76,7 +83,7 @@ A2p141 = np.array(
         [4124675351, 2196438580, 2527961345],
         [94452540, 4124675351, 2825656399],
     ],
-    dtype=np.object_,
+    dtype=object,
 )
 
 # Constants used in Beasley-Springer-Moro algorithm for approximating
@@ -222,7 +229,7 @@ class MRG32k3a(random.Random):
         self.version = 2
         self.generate = mrg32k3a
         self.ref_seed = ref_seed
-        self.seed(ref_seed)
+        self._current_state = ref_seed
         self.gauss_next = None
         if s_ss_sss_index is None:
             s_ss_sss_index = [0, 0, 0]
@@ -249,7 +256,7 @@ class MRG32k3a(random.Random):
             setattr(result, k, deepcopy(v, memo))
         return result
 
-    def seed(self, new_state: Tuple[int, int, int, int, int, int]) -> None:
+    def seed(self, a: SeedType = None, version: int = 2) -> None:
         """Set the state (or seed) of the generator and update the generator state.
 
         Parameters
@@ -258,8 +265,14 @@ class MRG32k3a(random.Random):
             New state to which to advance the generator.
 
         """
-        self._current_state = new_state
-        # super().seed(new_state)
+        if isinstance(a, tuple):
+            if len(a) != 6:
+                raise ValueError("Seed must be a tuple of length 6.")
+            if any(x < 0 for x in a):
+                raise ValueError("Seed values must be non-negative.")
+            self._current_state = a
+        else:
+            super().seed(a, version)
 
     def getstate(
         self,
@@ -300,7 +313,7 @@ class MRG32k3a(random.Random):
         random.Random
 
         """
-        self.seed(state[0])
+        self._current_state = state[0]
         super().setstate(state[1])
 
     def random(self) -> float:
@@ -452,7 +465,7 @@ class MRG32k3a(random.Random):
         """
         return mu - beta * _neg_log_log(self.random())
 
-    def binomialvariate(self, n: int, p: float) -> int:
+    def binomialvariate(self, n: int = 1, p: float = 0.5) -> int:
         """Generate a Binomial(n, p) random variate.
 
         Parameters
@@ -581,7 +594,7 @@ class MRG32k3a(random.Random):
         """
         nstate = self._advance_state(A1p141, A2p141, self.stream_start)
         # Update state
-        self.seed(tuple(nstate))
+        self._current_state = tuple(nstate)
         self.stream_start = nstate
         self.substream_start = nstate
         self.subsubstream_start = nstate
@@ -598,7 +611,7 @@ class MRG32k3a(random.Random):
         """
         nstate = self._advance_state(A1p94, A2p94, self.substream_start)
         # Update state
-        self.seed(tuple(nstate))
+        self._current_state = tuple(nstate)
         self.substream_start = nstate
         self.subsubstream_start = nstate
         # Increment the substream index.
@@ -613,7 +626,7 @@ class MRG32k3a(random.Random):
         """
         nstate = self._advance_state(A1p47, A2p47, self.subsubstream_start)
         # Update state
-        self.seed(tuple(nstate))
+        self._current_state = tuple(nstate)
         self.subsubstream_start = nstate
         # Increment the subsubstream index.
         self.s_ss_sss_index[2] += 1
@@ -622,7 +635,7 @@ class MRG32k3a(random.Random):
         """Reset the state of the generator to the start of the current stream."""
         nstate = self.stream_start
         # Update state
-        self.seed(tuple(nstate))
+        self._current_state = tuple(nstate)
         self.substream_start = nstate
         self.subsubstream_start = nstate
         # Reset index for substream and subsubstream.
@@ -632,7 +645,7 @@ class MRG32k3a(random.Random):
     def reset_substream(self) -> None:
         """Reset the state of the generator to the start of the current substream."""
         nstate = self.substream_start
-        self.seed(tuple(nstate))
+        self._current_state = tuple(nstate)
         # Update state referencing.
         self.subsubstream_start = nstate
         # Reset index for subsubstream.
@@ -640,7 +653,7 @@ class MRG32k3a(random.Random):
 
     def reset_subsubstream(self) -> None:
         """Reset the state of the generator to the start of the current subsubstream."""
-        self.seed(tuple(self.subsubstream_start))
+        self._current_state = tuple(self.subsubstream_start)
 
     def start_fixed_s_ss_sss(self, s_ss_sss_triplet: List[int]) -> None:
         """Set the rng to the start of a specified (stream, substream, subsubstream) triplet.
@@ -711,6 +724,6 @@ class MRG32k3a(random.Random):
             A1p47, A2p47, subsubstream, self.substream_start
         )
         # Update state.
-        self.seed(tuple(self.subsubstream_start))
+        self._current_state = tuple(self.subsubstream_start)
         # Update index referencing.
         self.s_ss_sss_index = s_ss_sss_triplet
