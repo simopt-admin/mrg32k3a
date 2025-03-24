@@ -5,8 +5,8 @@
 
 import math
 import random
-from copy import deepcopy
 import sys
+from copy import deepcopy
 from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
