@@ -6,7 +6,7 @@
 import math
 import random
 from copy import deepcopy
-from typing import Optional, Tuple, List, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
