@@ -500,7 +500,7 @@ class MRG32k3a(random.Random):
 
         # Generate n_elements - 1 random integers in the range [1, adjusted_sum - 1].
         temp_x = sorted(self.sample(range(1, adjusted_sum), k=n_elements - 1))
-        cut_points = [0] + temp_x + [adjusted_sum]
+        cut_points = [0, *temp_x, adjusted_sum]
         offset = int(with_zero)
         vec = [(cut_points[i + 1] - cut_points[i]) - offset for i in range(n_elements)]
 
