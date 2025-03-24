@@ -13,7 +13,9 @@ import numpy as np
 
 # Type hint for the seed parameter.
 if sys.version_info >= (3, 9):
-    SeedType = Union[int, float, str, bytes, bytearray, tuple, None]
+    SeedType = Union[
+        int, float, str, bytes, bytearray, Tuple[int, int, int, int, int, int], None
+    ]
 else:
     SeedType = Union[Any]
 
