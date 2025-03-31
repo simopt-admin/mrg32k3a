@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 5 15 * *' # Every 15th of the month at 5:00 UTC
 
 jobs:
   test:
