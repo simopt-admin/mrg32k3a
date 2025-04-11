@@ -10,8 +10,6 @@ The `mrg32k3a` module includes the `MRG32k3a` class and several useful functions
 They make use of techniques for efficiently "jumping ahead," as outlined by L'Ecuyer (1990).
 * The `reset_stream`, `reset_substream`, and `reset_subsubstream` functions reset the generator to the start of the current stream, substream, or subsubstream, respectively.
 
-The `matmodops` module includes basic matrix/modulus operations used by the `mrg32k3a` module.
-
 ### Installation
 
 The `mrg32k3a` package is available to download through the Python Packaging Index (PyPI) and can be installed from the terminal with the following command:
