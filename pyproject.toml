@@ -25,3 +25,8 @@ dependencies = ["numpy"]
 [project.urls]
 "Homepage" = "https://github.com/simopt-admin/mrg32k3a"
 "Documentation" = "https://mrg32k3a.readthedocs.io/en/latest/"
+
+[project.optional-dependencies]
+rust = [
+  "mrg32k3a-core"
+]
