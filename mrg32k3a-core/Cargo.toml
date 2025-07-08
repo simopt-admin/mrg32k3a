@@ -9,4 +9,5 @@ name = "mrg32k3a_core"
 crate-type = ["cdylib"]
 
 [dependencies]
+mrg32k3a-rs = { path = "../mrg32k3a-rs" }
 pyo3 = "0.25.0"
