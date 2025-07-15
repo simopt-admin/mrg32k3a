@@ -3,9 +3,9 @@
 import os
 import sys
 import unittest
+from typing import List
 
 import numpy as np
-from typing import List
 
 import mrg32k3a.mrg32k3a as mrg
 
