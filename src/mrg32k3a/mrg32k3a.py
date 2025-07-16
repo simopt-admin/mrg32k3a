@@ -1,3 +1,4 @@
+import logging
 import os
 
 # Import core components from Python implementation
@@ -21,9 +22,18 @@ from .python import (
     mrgm2,
 )
 
+# Set up logging
+logger = logging.getLogger(__name__)
+level = os.environ.get("MRG32K3A_LOG", None)
+if level is not None:
+    level = level.upper()
+    logger.setLevel(getattr(logging, level, logging.INFO))
+
 # Override with Rust implementation if requested
 if os.environ.get("MRG32K3A_BACKEND") == "rust":
+    logger.info("Using Rust backend for MRG32k3a")
     from .rust import MRG32k3a, bsm
+
 
 __all__ = [
     "A1p47",
