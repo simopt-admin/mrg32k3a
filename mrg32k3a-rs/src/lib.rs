@@ -128,6 +128,7 @@ fn compute_stream_start(
     jump_state(&a1, &a2, state)
 }
 
+#[derive(Clone)]
 pub struct Mrg32k3a {
     state: [u32; 6],
     seed: [u32; 6],

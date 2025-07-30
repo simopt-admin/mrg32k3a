@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import copy
 import os
 import sys
 import unittest
@@ -625,6 +626,36 @@ class TestVectors(unittest.TestCase):
         for result in results:
             self.assertAlmostEqual(sum(result), 1, places=14)
         self.assertTrue(all(x > 0 for x in result))
+
+
+class TestDeepCopy(unittest.TestCase):
+    def test_deepcopy_rust_rng(self):
+        # Test deepcopy functionality for Rust-based MRG32k3a
+        from mrg32k3a.rust import MRG32k3a as RustMRG32k3a
+
+        # Create original RNG with custom seed and stream indices
+        original_rng = RustMRG32k3a(
+            seed=(54321, 98765, 13579, 24680, 97531, 86420), s_ss_sss_index=(1, 2, 3)
+        )
+
+        # Generate some random numbers to advance the state
+        for _ in range(10):
+            original_rng.random()
+
+        # Perform deepcopy
+        copied_rng = copy.deepcopy(original_rng)
+
+        # Verify that all attributes match between original and copied RNG
+        self.assertEqual(original_rng._current_state, copied_rng._current_state)
+        self.assertEqual(original_rng.stream_start, copied_rng.stream_start)
+        self.assertEqual(original_rng.substream_start, copied_rng.substream_start)
+        self.assertEqual(original_rng.subsubstream_start, copied_rng.subsubstream_start)
+        self.assertEqual(original_rng.s_ss_sss_index, copied_rng.s_ss_sss_index)
+
+        # Verify that both RNGs generate the same sequence
+        original_sequence = [original_rng.random() for _ in range(5)]
+        copied_sequence = [copied_rng.random() for _ in range(5)]
+        self.assertEqual(original_sequence, copied_sequence)
 
 
 class TestAxpxx(unittest.TestCase):

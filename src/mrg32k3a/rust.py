@@ -76,6 +76,11 @@ class MRG32k3a(random.Random):
     def start_fixed_s_ss_sss(self, s_ss_sss_triplet: List[int]) -> None:
         self.rng.start_fixed_s_ss_sss(s_ss_sss_triplet)
 
+    def __deepcopy__(self, memo):
+        rng = MRG32k3a()
+        rng.rng = self.rng.clone()
+        return rng
+
     def normalvariate(self, mu: float = 0, sigma: float = 1) -> float:
         """Generate a normal random variate.
 

@@ -44,6 +44,12 @@ impl Mrg32k3a {
         self.rng.get_state().into()
     }
 
+    fn clone(&self) -> Self {
+        Mrg32k3a {
+            rng: self.rng.clone(),
+        }
+    }
+
     #[getter]
     fn s_ss_sss_index(&self) -> [usize; 3] {
         self.rng.get_stream_indices()
