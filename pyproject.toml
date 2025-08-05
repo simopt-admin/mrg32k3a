@@ -27,6 +27,4 @@ dependencies = ["numpy"]
 "Documentation" = "https://mrg32k3a.readthedocs.io/en/latest/"
 
 [project.optional-dependencies]
-rust = [
-  "mrg32k3a-core"
-]
+rust = ["mrg32k3a-core"]
