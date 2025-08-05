@@ -1,7 +1,8 @@
-# If you have added/deleted files/modules, you will need to run the following sphinx commands from docs and push to github
-# for those changes to be reflected on readthedocs
+# If you have added/deleted files/modules, you will need to run the following sphinx
+# commands from docs and push to github for those changes to be reflected on readthedocs
 
-# sphinx-apidoc -o . .. -f     # pushing after running this should be enough for readthedocs to be able to generate documentation
+# sphinx-apidoc -o . .. -f     # pushing after running this should be enough for
+#                              # readthedocs to be able to generate documentation
 # make clean                   # this command and the next one are for building the html locally
 # make html
 

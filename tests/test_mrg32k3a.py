@@ -4,7 +4,6 @@ import copy
 import os
 import sys
 import unittest
-from typing import List
 
 import numpy as np
 
@@ -147,7 +146,7 @@ class TestStreams(unittest.TestCase):
         (10, 0, 0): 0.8579536770597018,
     }
 
-    def __check_next_rand(self, rng: mrg.MRG32k3a, index: List[int]):
+    def __check_next_rand(self, rng: mrg.MRG32k3a, index: list[int]):
         random = rng.random()
         self.assertEqual(random, self.next_rand[tuple(index)])
 
@@ -476,10 +475,7 @@ class TestVariates(unittest.TestCase):
             [0.3, 0.7, 1, 0.6],
             [0.2, 0.4, 0.6, 1],
         ]
-        results = [
-            self.rng.mvnormalvariate(mean_vec=averages, cov=matrix)
-            for _ in range(150000)
-        ]
+        results = [self.rng.mvnormalvariate(mean_vec=averages, cov=matrix) for _ in range(150000)]
         means = np.mean(results, axis=0)
         stds = np.std(results, axis=0)
         self.assertAlmostEqual(means[0], 0, places=2)
@@ -593,9 +589,7 @@ class TestVectors(unittest.TestCase):
         else:
             self.fail("Exception not raised")
 
-        results = [
-            rng.integer_random_vector_from_simplex(2, 1, True) for _ in range(100)
-        ]
+        results = [rng.integer_random_vector_from_simplex(2, 1, True) for _ in range(100)]
         self.assertTrue(all(len(x) == 2 for x in results))
         self.assertTrue(all(sum(x) == 1 for x in results))
         count_0 = sum([1 for x in results if x[0] == 0 or x[1] == 0])
@@ -619,9 +613,7 @@ class TestVectors(unittest.TestCase):
         self.assertTrue(all(sum(x) < 9 for x in results))
         self.assertTrue(all(x > 0 for x in result))
 
-        results = [
-            rng.continuous_random_vector_from_simplex(2, 1, True) for _ in range(100)
-        ]
+        results = [rng.continuous_random_vector_from_simplex(2, 1, True) for _ in range(100)]
         self.assertTrue(all(len(x) == 2 for x in results))
         for result in results:
             self.assertAlmostEqual(sum(result), 1, places=14)
@@ -634,9 +626,7 @@ class TestDeepCopy(unittest.TestCase):
         from mrg32k3a.rust import MRG32k3a as RustMRG32k3a
 
         # Create original RNG with custom seed and stream indices
-        original_rng = RustMRG32k3a(
-            seed=(54321, 98765, 13579, 24680, 97531, 86420), s_ss_sss_index=(1, 2, 3)
-        )
+        original_rng = RustMRG32k3a(seed=(54321, 98765, 13579, 24680, 97531, 86420), s_ss_sss_index=(1, 2, 3))
 
         # Generate some random numbers to advance the state
         for _ in range(10):

@@ -1,23 +1,19 @@
 #!/usr/bin/env python
-"""Provide a subclass of ``random.Random`` using mrg32k3a as the generator with stream/substream/subsubstream support."""
+"""Provide a subclass of ``random.Random`` using mrg32k3a as the generator.
+
+This implementation supports stream/substream/subsubstream functionality.
+"""
 
 # Code largely adopted from PyMOSO repository (https://github.com/pymoso/PyMOSO).
 
 import math
 import random
-import sys
 from copy import deepcopy
-from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 
 # Type hint for the seed parameter.
-if sys.version_info >= (3, 9):
-    SeedType = Union[
-        int, float, str, bytes, bytearray, Tuple[int, int, int, int, int, int], None
-    ]
-else:
-    SeedType = Union[Any]
+SeedType = int | float | str | bytes | bytearray | tuple[int, int, int, int, int, int] | None
 
 # Constants used in mrg32k3a and in substream generation.
 # P. L'Ecuyer, ``Good Parameter Sets for Combined Multiple Recursive Random Number Generators'',
@@ -111,8 +107,8 @@ def _neg_log_log(x: float) -> float:
 
 # Adapted to pure Python from the P. L'Ecuyer code referenced above.
 def mrg32k3a(
-    state: Tuple[int, int, int, int, int, int],
-) -> Tuple[Tuple[int, int, int, int, int, int], float]:
+    state: tuple[int, int, int, int, int, int],
+) -> tuple[tuple[int, int, int, int, int, int], float]:
     """Generate a random number between 0 and 1 from a given state.
 
     Parameters
@@ -157,7 +153,7 @@ def bsm(u: float) -> float:
 
     """
 
-    def horner(x: float, coeffs: List[float]) -> float:
+    def horner(x: float, coeffs: list[float]) -> float:
         result = 0.0
         for c in reversed(coeffs):
             result = result * x + c
@@ -208,7 +204,7 @@ class MRG32k3a(random.Random):
 
     def __init__(
         self,
-        ref_seed: Tuple[int, int, int, int, int, int] = (
+        ref_seed: tuple[int, int, int, int, int, int] = (
             12345,
             12345,
             12345,
@@ -216,7 +212,7 @@ class MRG32k3a(random.Random):
             12345,
             12345,
         ),
-        s_ss_sss_index: Optional[List[int]] = None,
+        s_ss_sss_index: list[int] | None = None,
     ) -> None:
         """Initialize the MRG32k3a generator.
 
@@ -278,7 +274,7 @@ class MRG32k3a(random.Random):
 
     def getstate(
         self,
-    ) -> Tuple[Tuple[int, int, int, int, int, int], Tuple]:
+    ) -> tuple[tuple[int, int, int, int, int, int], tuple]:
         """Return the state of the generator.
 
         Returns
@@ -297,9 +293,9 @@ class MRG32k3a(random.Random):
 
     def setstate(
         self,
-        state: Tuple[
-            Tuple[int, int, int, int, int, int],
-            Tuple,
+        state: tuple[
+            tuple[int, int, int, int, int, int],
+            tuple,
         ],
     ) -> None:
         """Set the internal state of the generator.
@@ -330,7 +326,7 @@ class MRG32k3a(random.Random):
         self._current_state, u = self.generate(self._current_state)
         return float(u)
 
-    def get_current_state(self) -> Tuple[int, int, int, int, int, int]:
+    def get_current_state(self) -> tuple[int, int, int, int, int, int]:
         """Return the current state of the generator.
 
         Returns
@@ -387,10 +383,10 @@ class MRG32k3a(random.Random):
 
     def mvnormalvariate(
         self,
-        mean_vec: List[float],
-        cov: Union[List[List[float]], np.ndarray],
+        mean_vec: list[float],
+        cov: list[list[float]] | np.ndarray,
         factorized: bool = False,
-    ) -> List[float]:
+    ) -> list[float]:
         """Generate a normal random vector.
 
         Parameters
@@ -485,10 +481,8 @@ class MRG32k3a(random.Random):
         """
         return sum(self.random() < p for _ in range(n))
 
-    def integer_random_vector_from_simplex(
-        self, n_elements: int, summation: int, with_zero: bool = False
-    ) -> List[int]:
-        """Generate a random vector with a specified number of non-negative integer elements that sum up to a specified number.
+    def integer_random_vector_from_simplex(self, n_elements: int, summation: int, with_zero: bool = False) -> list[int]:
+        """Generate a random vector with non-negative integer elements that sum to a specified number.
 
         Parameters
         ----------
@@ -523,8 +517,10 @@ class MRG32k3a(random.Random):
 
     def continuous_random_vector_from_simplex(
         self, n_elements: int, summation: float, exact_sum: bool = False
-    ) -> List[float]:
-        """Generate a random vector with a specified number of non-negative real-valued elements that sum up to (or less than or equal to) a specified number.
+    ) -> list[float]:
+        """Generate a random vector with non-negative real-valued elements.
+
+        Elements sum up to (or less than or equal to) a specified number.
 
         Parameters
         ----------
@@ -541,7 +537,6 @@ class MRG32k3a(random.Random):
         List [float]
             Vector of ``n_elements`` non-negative real-valued numbers that
             sum up to (or less than or equal to) ``summation``.
-
         """
         if exact_sum:
             # Generate a vector of length n_elements of i.i.d. Exponential(1)
@@ -657,7 +652,7 @@ class MRG32k3a(random.Random):
         """Reset the state of the generator to the start of the current subsubstream."""
         self._current_state = tuple(self.subsubstream_start)
 
-    def start_fixed_s_ss_sss(self, s_ss_sss_triplet: List[int]) -> None:
+    def start_fixed_s_ss_sss(self, s_ss_sss_triplet: list[int]) -> None:
         """Set the rng to the start of a specified (stream, substream, subsubstream) triplet.
 
         Parameters
@@ -693,9 +688,7 @@ class MRG32k3a(random.Random):
                 j //= 2
             return b
 
-        def progress_state(
-            a1: np.ndarray, a2: np.ndarray, stream: int, state: np.ndarray
-        ) -> np.ndarray:
+        def progress_state(a1: np.ndarray, a2: np.ndarray, stream: int, state: np.ndarray) -> np.ndarray:
             """Efficiently advance state -> A*s % m for both state parts.
 
             Parameters
@@ -716,15 +709,9 @@ class MRG32k3a(random.Random):
         # Grab the stream, substream, and subsubstream indices.
         stream, substream, subsubstream = s_ss_sss_triplet
         # Advance to start of specified stream.
-        self.stream_start = progress_state(
-            A1p141, A2p141, stream, np.array(self.ref_seed)
-        )
-        self.substream_start = progress_state(
-            A1p94, A2p94, substream, self.stream_start
-        )
-        self.subsubstream_start = progress_state(
-            A1p47, A2p47, subsubstream, self.substream_start
-        )
+        self.stream_start = progress_state(A1p141, A2p141, stream, np.array(self.ref_seed))
+        self.substream_start = progress_state(A1p94, A2p94, substream, self.stream_start)
+        self.subsubstream_start = progress_state(A1p47, A2p47, subsubstream, self.substream_start)
         # Update state.
         self._current_state = tuple(self.subsubstream_start)
         # Update index referencing.

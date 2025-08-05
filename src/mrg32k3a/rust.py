@@ -1,6 +1,5 @@
 import math
 import random
-from typing import List, Union
 
 import mrg32k3a_core
 import numpy as np
@@ -73,7 +72,7 @@ class MRG32k3a(random.Random):
     def reset_subsubstream(self) -> None:
         self.rng.reset_subsubstream()
 
-    def start_fixed_s_ss_sss(self, s_ss_sss_triplet: List[int]) -> None:
+    def start_fixed_s_ss_sss(self, s_ss_sss_triplet: list[int]) -> None:
         self.rng.start_fixed_s_ss_sss(s_ss_sss_triplet)
 
     def __deepcopy__(self, memo):
@@ -127,10 +126,10 @@ class MRG32k3a(random.Random):
 
     def mvnormalvariate(
         self,
-        mean_vec: List[float],
-        cov: Union[List[List[float]], np.ndarray],
+        mean_vec: list[float],
+        cov: list[list[float]] | np.ndarray,
         factorized: bool = False,
-    ) -> List[float]:
+    ) -> list[float]:
         """Generate a normal random vector.
 
         Parameters
@@ -225,10 +224,8 @@ class MRG32k3a(random.Random):
         """
         return sum(self.random() < p for _ in range(n))
 
-    def integer_random_vector_from_simplex(
-        self, n_elements: int, summation: int, with_zero: bool = False
-    ) -> List[int]:
-        """Generate a random vector with a specified number of non-negative integer elements that sum up to a specified number.
+    def integer_random_vector_from_simplex(self, n_elements: int, summation: int, with_zero: bool = False) -> list[int]:
+        """Generate a random vector with non-negative integer elements that sum to a specified number.
 
         Parameters
         ----------
@@ -263,8 +260,10 @@ class MRG32k3a(random.Random):
 
     def continuous_random_vector_from_simplex(
         self, n_elements: int, summation: float, exact_sum: bool = False
-    ) -> List[float]:
-        """Generate a random vector with a specified number of non-negative real-valued elements that sum up to (or less than or equal to) a specified number.
+    ) -> list[float]:
+        """Generate a random vector with non-negative real-valued elements.
+
+        Elements sum up to (or less than or equal to) a specified number.
 
         Parameters
         ----------
