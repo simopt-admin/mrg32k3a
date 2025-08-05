@@ -14,7 +14,7 @@ authors = [
 description = "A Python implementation of the mrg32k3a pseudo-random number generator."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.6"
+requires-python = ">=3.11"
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
