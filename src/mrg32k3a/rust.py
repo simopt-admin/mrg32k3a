@@ -17,6 +17,7 @@ class MRG32k3a(random.Random):
         s_ss_sss_index=None,
     ) -> None:
         self.rng = mrg32k3a_core.Mrg32k3a(seed, s_ss_sss_index)
+        self.ref_seed = seed
 
     @property
     def _current_state(self):
