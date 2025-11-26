@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mrg32k3a"
-version = "2.0.0"
+version = "2.0.1"
 authors = [
   { name = "David Eckman", email = "eckman@tamu.edu" },
   { name = "Shane Henderson", email = "sgh9@cornell.edu" },
@@ -27,7 +27,7 @@ dependencies = ["numpy"]
 "Documentation" = "https://mrg32k3a.readthedocs.io/en/latest/"
 
 [project.optional-dependencies]
-rust = ["mrg32k3a-core>=0.1.0"]
+rust = ["mrg32k3a-core>=0.1.1"]
 
 [tool.ruff]
 line-length = 120
